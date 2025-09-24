@@ -9,6 +9,5 @@ SmartChess aims to build an intelligent electronic chessboard that automatically
   - `8x8-maquette/`: Paliers 2 & 3 mockup (hardware, firmware, Raspberry Pi controller, validation, system design).
 - `ai/`: research and development around the SmartChess AI (models, training, inference, datasets).
 - `docs/`: central documentation (roadmap, bill of materials, guides).
-- `deliverables/`: outward-facing assets (demos, presentations, media).
-- `tools/`: shared scripts plus calibration utilities.
+
 
