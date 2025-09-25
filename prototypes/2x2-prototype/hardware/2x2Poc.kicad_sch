@@ -1511,6 +1511,12 @@
 		(uuid "60d828bd-4d8f-4d89-8e17-1c976830fc3a")
 	)
 	(junction
+		(at 40.64 57.15)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7070effd-d19a-4785-844a-46221feb17cc")
+	)
+	(junction
 		(at 85.09 68.58)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1548,6 +1554,17 @@
 	)
 	(wire
 		(pts
+			(xy 53.34 99.06) (xy 53.34 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 255 0 207 1)
+		)
+		(uuid "01480ab7-74a3-4362-847e-d08f2f967907")
+	)
+	(wire
+		(pts
 			(xy 110.49 58.42) (xy 110.49 54.61)
 		)
 		(stroke
@@ -1558,7 +1575,7 @@
 	)
 	(wire
 		(pts
-			(xy 50.8 26.67) (xy 50.8 102.87)
+			(xy 50.8 26.67) (xy 50.8 85.09)
 		)
 		(stroke
 			(width 0)
@@ -1579,6 +1596,17 @@
 	)
 	(wire
 		(pts
+			(xy 48.26 86.36) (xy 48.26 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 255 110 19 1)
+		)
+		(uuid "08e905de-029d-4679-b4be-031f0921cd2b")
+	)
+	(wire
+		(pts
 			(xy 100.33 129.54) (xy 100.33 132.08)
 		)
 		(stroke
@@ -1589,7 +1617,7 @@
 	)
 	(wire
 		(pts
-			(xy 74.93 57.15) (xy 38.1 57.15)
+			(xy 74.93 57.15) (xy 40.64 57.15)
 		)
 		(stroke
 			(width 0)
@@ -1730,6 +1758,17 @@
 	)
 	(wire
 		(pts
+			(xy 43.18 76.2) (xy 43.18 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 146 71 255 1)
+		)
+		(uuid "1f855e74-ae7b-4bce-ab3f-4dc639319ec0")
+	)
+	(wire
+		(pts
 			(xy 85.09 68.58) (xy 74.93 68.58)
 		)
 		(stroke
@@ -1835,6 +1874,17 @@
 	)
 	(wire
 		(pts
+			(xy 64.77 55.88) (xy 35.56 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 255 216 104 1)
+		)
+		(uuid "34e9d4b1-cb20-4f0c-acfe-5a73f59886c5")
+	)
+	(wire
+		(pts
 			(xy 92.71 30.48) (xy 92.71 26.67)
 		)
 		(stroke
@@ -1910,17 +1960,6 @@
 	)
 	(wire
 		(pts
-			(xy 38.1 57.15) (xy 38.1 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-			(color 255 3 27 1)
-		)
-		(uuid "52f128d6-af2a-428b-9139-e6a33d53adac")
-	)
-	(wire
-		(pts
 			(xy 48.26 105.41) (xy 57.15 105.41)
 		)
 		(stroke
@@ -1964,7 +2003,7 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 30.48) (xy 53.34 100.33)
+			(xy 53.34 30.48) (xy 53.34 91.44)
 		)
 		(stroke
 			(width 0)
@@ -2007,6 +2046,17 @@
 	)
 	(wire
 		(pts
+			(xy 55.88 54.61) (xy 33.02 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 151 69 255 1)
+		)
+		(uuid "78e4f9e9-5fdd-4a54-8157-770f2d98d180")
+	)
+	(wire
+		(pts
 			(xy 127 166.37) (xy 142.24 166.37)
 		)
 		(stroke
@@ -2014,6 +2064,17 @@
 			(type default)
 		)
 		(uuid "83deb6a6-cc46-45e6-aef2-92a2971809ea")
+	)
+	(wire
+		(pts
+			(xy 40.64 57.15) (xy 38.1 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 255 3 27 1)
+		)
+		(uuid "84d98290-bba5-4ce6-8931-6a0f230c7656")
 	)
 	(wire
 		(pts
@@ -2060,7 +2121,7 @@
 	)
 	(wire
 		(pts
-			(xy 92.71 55.88) (xy 35.56 55.88)
+			(xy 92.71 55.88) (xy 72.39 55.88)
 		)
 		(stroke
 			(width 0)
@@ -2088,6 +2149,16 @@
 			(type default)
 		)
 		(uuid "8f080e66-e012-4ced-bde5-1de854d182d5")
+	)
+	(wire
+		(pts
+			(xy 50.8 92.71) (xy 50.8 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "910f38e1-f0b2-40c5-abe1-100ba4eb77d4")
 	)
 	(wire
 		(pts
@@ -2133,7 +2204,7 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 43.18) (xy 45.72 107.95)
+			(xy 45.72 43.18) (xy 45.72 73.66)
 		)
 		(stroke
 			(width 0)
@@ -2199,7 +2270,7 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 40.64) (xy 43.18 110.49)
+			(xy 43.18 40.64) (xy 43.18 68.58)
 		)
 		(stroke
 			(width 0)
@@ -2221,6 +2292,17 @@
 	)
 	(wire
 		(pts
+			(xy 45.72 81.28) (xy 45.72 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 87 219 255 1)
+		)
+		(uuid "ab3aa572-77be-4184-862f-ae5c36d1f4b2")
+	)
+	(wire
+		(pts
 			(xy 74.93 30.48) (xy 53.34 30.48)
 		)
 		(stroke
@@ -2232,7 +2314,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 24.13) (xy 48.26 105.41)
+			(xy 48.26 24.13) (xy 48.26 78.74)
 		)
 		(stroke
 			(width 0)
@@ -2254,7 +2336,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 54.61) (xy 33.02 54.61)
+			(xy 110.49 54.61) (xy 63.5 54.61)
 		)
 		(stroke
 			(width 0)
@@ -2315,6 +2397,16 @@
 			(color 42 31 255 1)
 		)
 		(uuid "b9e13802-8e7f-4309-a789-6ab14a98a154")
+	)
+	(wire
+		(pts
+			(xy 40.64 69.85) (xy 40.64 113.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bb29be67-6204-4cd3-8e61-09476f447bbe")
 	)
 	(wire
 		(pts
@@ -2391,6 +2483,17 @@
 	)
 	(wire
 		(pts
+			(xy 38.1 64.77) (xy 38.1 115.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 255 3 27 1)
+		)
+		(uuid "ccec2eaa-c32d-4b5f-8cbb-5de50a4b4e26")
+	)
+	(wire
+		(pts
 			(xy 35.56 118.11) (xy 57.15 118.11)
 		)
 		(stroke
@@ -2433,7 +2536,7 @@
 	)
 	(wire
 		(pts
-			(xy 40.64 39.37) (xy 40.64 113.03)
+			(xy 40.64 39.37) (xy 40.64 57.15)
 		)
 		(stroke
 			(width 0)
@@ -2546,6 +2649,16 @@
 			(type default)
 		)
 		(uuid "f56ba5a0-ba88-46bf-996e-c37c6eaaa8de")
+	)
+	(wire
+		(pts
+			(xy 40.64 62.23) (xy 40.64 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f673b763-373d-41db-bb22-3fd30c16c19a")
 	)
 	(wire
 		(pts
@@ -2713,6 +2826,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 43.18 72.39 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "0f3980c7-8aa1-48ab-8f25-181075a77cb3")
+		(property "Reference" "R9"
+			(at 45.72 71.1199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 45.72 73.6599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 41.402 72.39 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 43.18 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 43.18 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "66b9cc9a-0956-4f15-9ce3-4b2e4b246577")
+		)
+		(pin "1"
+			(uuid "7ae11a70-3b46-47f0-a008-bceab67d6de9")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Switch:SW_Reed")
 		(at 100.33 137.16 90)
 		(unit 1)
@@ -2843,6 +3026,76 @@
 			(project "2x2Poc"
 				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
 					(reference "#PWR02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 53.34 95.25 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2e93e99d-e3ac-46c5-9b24-2a7191c197ec")
+		(property "Reference" "R5"
+			(at 55.88 93.9799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 55.88 96.5199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 51.562 95.25 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 53.34 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 53.34 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "49939794-f17c-43fc-bb47-a6095c3968cc")
+		)
+		(pin "1"
+			(uuid "4bb7ea84-bcc2-432e-9224-2bdc964e41e8")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R5")
 					(unit 1)
 				)
 			)
@@ -3369,6 +3622,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 45.72 77.47 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6c45ab5a-2be7-44cb-9495-76eec62a0f27")
+		(property "Reference" "R8"
+			(at 48.26 76.1999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 48.26 78.7399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 43.942 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 45.72 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 45.72 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "a0d66a8c-a59f-47bd-820f-df32506ffba0")
+		)
+		(pin "1"
+			(uuid "2a58103e-e96b-44db-aea7-2dbd49709dd8")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Switch:SW_Reed")
 		(at 127 172.72 90)
 		(unit 1)
@@ -3433,6 +3756,76 @@
 			(project "2x2Poc"
 				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
 					(reference "SW4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 50.8 88.9 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "740db28d-86b2-473e-9167-edb6c50e63c1")
+		(property "Reference" "R6"
+			(at 53.34 87.6299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 53.34 90.1699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 49.022 88.9 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 50.8 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 50.8 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "702a9627-839b-43f7-93b9-21173db06cf3")
+		)
+		(pin "1"
+			(uuid "f580f318-8360-40d1-afd3-15491e7d039f")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R6")
 					(unit 1)
 				)
 			)
@@ -3569,6 +3962,144 @@
 			(project "2x2Poc"
 				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
 					(reference "#PWR06")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 68.58 55.88 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "87d48cbc-1cb5-4c0d-b07d-a798839230f1")
+		(property "Reference" "R12"
+			(at 68.58 49.53 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 68.58 52.07 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 68.58 57.658 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 68.58 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 68.58 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "0ebdc36b-00f0-4fbe-b88e-87ff1f6ff347")
+		)
+		(pin "1"
+			(uuid "5622c789-af40-417b-8c1e-3fb574a49e37")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 48.26 82.55 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9a1fc734-1d6c-43bc-a0eb-788d57f012a7")
+		(property "Reference" "R7"
+			(at 50.8 81.2799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 50.8 83.8199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 46.482 82.55 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 48.26 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 48.26 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "08b6d70a-a795-4006-b6e1-5f5414834cf4")
+		)
+		(pin "1"
+			(uuid "a286df30-1476-439e-85de-b060f0608d5b")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R7")
 					(unit 1)
 				)
 			)
@@ -3801,6 +4332,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 40.64 66.04 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b52211e7-c359-48e6-a057-c376b505f43c")
+		(property "Reference" "R10"
+			(at 43.18 64.7699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 43.18 67.3099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 38.862 66.04 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 40.64 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 40.64 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "5ffbaf7b-abaf-4996-9f48-12cd2972d729")
+		)
+		(pin "1"
+			(uuid "f0b55dfc-edd7-4185-9379-e2b7db324b93")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:LED")
 		(at 110.49 62.23 90)
 		(unit 1)
@@ -3943,6 +4544,74 @@
 			(project "2x2Poc"
 				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
 					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 59.69 54.61 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "db79c93b-c03f-40d6-9a31-a177b9af1414")
+		(property "Reference" "R11"
+			(at 59.69 48.26 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 59.69 50.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 59.69 56.388 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 59.69 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 59.69 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "a806de66-ac67-461d-8d5a-3ed069b29f9d")
+		)
+		(pin "1"
+			(uuid "88ad3b65-df53-4018-aa1f-e73eb816c2b5")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R11")
 					(unit 1)
 				)
 			)
@@ -4304,6 +4973,76 @@
 			(project "2x2Poc"
 				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
 					(reference "D63")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 38.1 60.96 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "fa3f6309-b13e-4c57-87b9-6e385268575e")
+		(property "Reference" "R13"
+			(at 40.64 59.6899 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 40.64 62.2299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 39.878 60.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "1bbbd0cc-772c-4d87-9084-6504207f9bff")
+		)
+		(pin "1"
+			(uuid "0d5a8a94-7774-4d9b-8b11-3a6c3c48504f")
+		)
+		(instances
+			(project "2x2Poc"
+				(path "/5d39e13b-8ec0-498a-bc91-3882db91bf02"
+					(reference "R13")
 					(unit 1)
 				)
 			)

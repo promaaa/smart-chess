@@ -5260,6 +5260,17 @@
 	)
 	(wire
 		(pts
+			(xy 341.63 173.99) (xy 341.63 203.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "285009a9-9ee0-477a-8086-53404dd392c4")
+	)
+	(wire
+		(pts
 			(xy 306.07 149.86) (xy 295.91 149.86)
 		)
 		(stroke
@@ -6144,6 +6155,17 @@
 	)
 	(wire
 		(pts
+			(xy 330.2 181.61) (xy 330.2 195.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "55290eca-e82c-4420-a3a2-61c75ae34d50")
+	)
+	(wire
+		(pts
 			(xy 278.13 48.26) (xy 295.91 48.26)
 		)
 		(stroke
@@ -6391,6 +6413,17 @@
 	)
 	(wire
 		(pts
+			(xy 334.01 173.99) (xy 334.01 198.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "60618bdc-3526-482b-8b9c-0e0c29b4261b")
+	)
+	(wire
+		(pts
 			(xy 189.23 139.7) (xy 207.01 139.7)
 		)
 		(stroke
@@ -6575,6 +6608,17 @@
 	)
 	(wire
 		(pts
+			(xy 311.15 173.99) (xy 311.15 182.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "6832cd63-b5f8-4332-889d-5036832fe1e1")
+	)
+	(wire
+		(pts
 			(xy 217.17 161.29) (xy 314.96 161.29)
 		)
 		(stroke
@@ -6712,7 +6756,7 @@
 	)
 	(wire
 		(pts
-			(xy 320.04 160.02) (xy 320.04 187.96)
+			(xy 320.04 160.02) (xy 320.04 166.37)
 		)
 		(stroke
 			(width 0)
@@ -7033,7 +7077,18 @@
 	)
 	(wire
 		(pts
-			(xy 322.58 158.75) (xy 322.58 190.5)
+			(xy 322.58 181.61) (xy 322.58 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "818d32b9-e184-4441-8aa2-8b9b89f2c78a")
+	)
+	(wire
+		(pts
+			(xy 322.58 158.75) (xy 322.58 173.99)
 		)
 		(stroke
 			(width 0)
@@ -7529,6 +7584,17 @@
 	)
 	(wire
 		(pts
+			(xy 326.39 173.99) (xy 326.39 193.04)
+		)
+		(stroke
+			(width 0.254)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "9aeec919-8fd9-41d3-971f-a72d5243ba14")
+	)
+	(wire
+		(pts
 			(xy 95.25 67.31) (xy 107.95 67.31)
 		)
 		(stroke
@@ -7974,6 +8040,17 @@
 	)
 	(wire
 		(pts
+			(xy 320.04 173.99) (xy 320.04 187.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "b4a1b1f2-5e76-4e93-980c-77903b518a86")
+	)
+	(wire
+		(pts
 			(xy 82.55 63.5) (xy 82.55 67.31)
 		)
 		(stroke
@@ -8200,7 +8277,7 @@
 	)
 	(wire
 		(pts
-			(xy 330.2 156.21) (xy 330.2 195.58)
+			(xy 330.2 156.21) (xy 330.2 173.99)
 		)
 		(stroke
 			(width 0)
@@ -8286,7 +8363,7 @@
 	)
 	(wire
 		(pts
-			(xy 341.63 149.86) (xy 341.63 203.2)
+			(xy 341.63 149.86) (xy 341.63 166.37)
 		)
 		(stroke
 			(width 0)
@@ -8387,6 +8464,17 @@
 			(color 42 31 255 1)
 		)
 		(uuid "c5593152-8591-4b9d-9404-314669675fb4")
+	)
+	(wire
+		(pts
+			(xy 337.82 181.61) (xy 337.82 200.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "c5b91293-d73f-420a-9c0e-cd474ccf8f3b")
 	)
 	(wire
 		(pts
@@ -8760,7 +8848,7 @@
 	)
 	(wire
 		(pts
-			(xy 314.96 161.29) (xy 314.96 185.42)
+			(xy 314.96 161.29) (xy 314.96 173.99)
 		)
 		(stroke
 			(width 0)
@@ -8889,7 +8977,7 @@
 	)
 	(wire
 		(pts
-			(xy 334.01 154.94) (xy 334.01 198.12)
+			(xy 334.01 154.94) (xy 334.01 166.37)
 		)
 		(stroke
 			(width 0)
@@ -9198,6 +9286,17 @@
 	)
 	(wire
 		(pts
+			(xy 314.96 181.61) (xy 314.96 185.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+			(color 42 31 255 1)
+		)
+		(uuid "f39a33d9-b014-439b-8cdc-d6ded6c70860")
+	)
+	(wire
+		(pts
 			(xy 24.13 50.8) (xy 24.13 72.39)
 		)
 		(stroke
@@ -9338,7 +9437,7 @@
 	)
 	(wire
 		(pts
-			(xy 337.82 151.13) (xy 337.82 200.66)
+			(xy 337.82 151.13) (xy 337.82 173.99)
 		)
 		(stroke
 			(width 0)
@@ -9369,7 +9468,7 @@
 	)
 	(wire
 		(pts
-			(xy 326.39 157.48) (xy 326.39 193.04)
+			(xy 326.39 157.48) (xy 326.39 166.37)
 		)
 		(stroke
 			(width 0)
@@ -9422,7 +9521,7 @@
 	)
 	(wire
 		(pts
-			(xy 311.15 162.56) (xy 311.15 182.88)
+			(xy 311.15 162.56) (xy 311.15 166.37)
 		)
 		(stroke
 			(width 0)
@@ -9580,6 +9679,16 @@
 		)
 		(uuid "ffdf700c-2663-4242-a3c4-754b1c08cbaa")
 	)
+	(label ""
+		(at 308.61 257.81 0)
+		(effects
+			(font
+				(size 3.81 3.81)
+			)
+			(justify left bottom)
+		)
+		(uuid "070e330d-25d9-4db9-a15f-a16bf12083b4")
+	)
 	(label "x4"
 		(at 142.24 147.32 0)
 		(effects
@@ -9589,6 +9698,16 @@
 			(justify left bottom)
 		)
 		(uuid "0f4479d6-52ae-4dd5-bda2-5f15ca4264f5")
+	)
+	(label "Schematics of the 8x8 Chessboard"
+		(at 302.26 261.62 0)
+		(effects
+			(font
+				(size 3.048 3.048)
+			)
+			(justify left bottom)
+		)
+		(uuid "2c8d6b46-0ca3-4906-a810-1e5326671562")
 	)
 	(symbol
 		(lib_id "Driver_LED:IS31FL3731-QF")
@@ -9880,6 +9999,76 @@
 			(project "Smart-chess"
 				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
 					(reference "#PWR06")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 341.63 170.18 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "04681d3a-a2ff-4ac3-adff-ba98d8a285d6")
+		(property "Reference" "R17"
+			(at 344.17 168.9099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 344.17 171.4499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 339.852 170.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 341.63 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 341.63 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "f234de09-e324-4a1f-aab0-4efa91df8dc5")
+		)
+		(pin "2"
+			(uuid "b582be6b-f9c5-4b58-8547-d605e7d47069")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R17")
 					(unit 1)
 				)
 			)
@@ -10806,6 +10995,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 337.82 177.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "283dc1f6-ae29-48ba-b2c2-8ae2ab9d44e3")
+		(property "Reference" "R16"
+			(at 340.36 176.5299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 340.36 179.0699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 336.042 177.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 337.82 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 337.82 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fc94a5ee-275b-4ca2-983e-fd8c657ca1c4")
+		)
+		(pin "2"
+			(uuid "953efa27-ed24-42c8-ad8b-04f96427ef51")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:LED")
 		(at 242.57 52.07 90)
 		(unit 1)
@@ -11041,6 +11300,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 320.04 170.18 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2efd8ae0-a7b1-4106-84b4-db8543645ee0")
+		(property "Reference" "R11"
+			(at 322.58 168.9099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 322.58 171.4499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 318.262 170.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 320.04 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 320.04 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "0be6bda3-b587-4a25-a3df-895b3b55f6fd")
+		)
+		(pin "2"
+			(uuid "19dd823e-cb36-4d7e-a09f-d09808149d45")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:LED")
 		(at 189.23 128.27 90)
 		(unit 1)
@@ -11113,6 +11442,76 @@
 			(project "Smart-chess"
 				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
 					(reference "D79")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 326.39 170.18 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "32545f94-3873-4455-8b7a-6a9e0de46d52")
+		(property "Reference" "R13"
+			(at 328.93 168.9099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 328.93 171.4499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 324.612 170.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 326.39 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 326.39 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1e9cdabd-419c-440c-a6e5-6d18776bbd89")
+		)
+		(pin "2"
+			(uuid "2e91a1d9-ff8e-4d3e-a8c1-3da21a6b01d8")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R13")
 					(unit 1)
 				)
 			)
@@ -11263,6 +11662,76 @@
 			(project "Smart-chess"
 				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
 					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 311.15 170.18 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3715e91f-a741-4a52-be2f-83be4465160e")
+		(property "Reference" "R9"
+			(at 313.69 168.9099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 313.69 171.4499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 309.372 170.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 311.15 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 311.15 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e7378fc0-e41e-4f6f-b62f-0c46692914d2")
+		)
+		(pin "2"
+			(uuid "026d820e-d9fb-48b3-a96a-8b9af7c625d8")
+		)
+		(instances
+			(project ""
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R9")
 					(unit 1)
 				)
 			)
@@ -14465,6 +14934,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 330.2 177.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "915e06b5-35a6-4c96-bc1d-2bcc9a5be625")
+		(property "Reference" "R14"
+			(at 332.74 176.5299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 332.74 179.0699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 328.422 177.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 330.2 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 330.2 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "15107e0c-c43d-4822-afdf-30efdb2d879a")
+		)
+		(pin "2"
+			(uuid "30df6652-9b5b-44f9-9529-425d82f2f04e")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R14")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:LED")
 		(at 278.13 67.31 90)
 		(unit 1)
@@ -15303,6 +15842,76 @@
 			(project "Smart-chess"
 				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
 					(reference "D75")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 314.96 177.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a883b3fc-4ead-45da-aad9-d997921e863f")
+		(property "Reference" "R10"
+			(at 317.5 176.5299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 317.5 179.0699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 313.182 177.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 314.96 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 314.96 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fe0abaa5-026f-44d7-8a74-b72199421b91")
+		)
+		(pin "2"
+			(uuid "a6a978e0-02a0-4893-888e-4fcd76e58c9f")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R10")
 					(unit 1)
 				)
 			)
@@ -17062,6 +17671,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 322.58 177.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e48ba60a-f11a-4b4e-81d5-545ae4c46547")
+		(property "Reference" "R12"
+			(at 325.12 176.5299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 325.12 179.0699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 320.802 177.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 322.58 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 322.58 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e3a1d5cd-fe91-4a05-a65d-51f7024d6dff")
+		)
+		(pin "2"
+			(uuid "796f7bb1-beec-47af-9e18-074dc5804a50")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:LED")
 		(at 189.23 36.83 90)
 		(unit 1)
@@ -17430,6 +18109,76 @@
 			(project "Smart-chess"
 				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
 					(reference "D74")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 334.01 170.18 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f1d88f4c-ba42-41f5-8f5e-75b4f5b41a72")
+		(property "Reference" "R15"
+			(at 336.55 168.9099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10kΩ"
+			(at 336.55 171.4499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 332.232 170.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 334.01 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 334.01 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3346bca1-e7bb-4b27-aee0-e96f8fcc9ee9")
+		)
+		(pin "2"
+			(uuid "17b08aff-4013-426f-b7b4-188f50882a4d")
+		)
+		(instances
+			(project "Smart-chess"
+				(path "/1e64d706-7b20-428c-9429-bfb15dfe8240"
+					(reference "R15")
 					(unit 1)
 				)
 			)
