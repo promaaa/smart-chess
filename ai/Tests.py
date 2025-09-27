@@ -94,19 +94,14 @@ class ChessTests:
         # rook at e8 attacks e1 along file -> white in check
         in_check = c.is_in_check(True)
         self.assert_true(in_check, "White is in check from black rook on e8")
-
-        # Try a legal move that blocks the check: add a white rook from e2 to e3 etc.
-        # Place white rook at e2 and try moving it to e2->e3 (non-blocking) -> should still be in check
-        c.bitboards['R'] = c.square_mask(sq('a',1))  # irrelevant rook somewhere else
-        # place a white rook at e2 to attempt block
-        c.bitboards['R'] |= c.square_mask(sq('e',2))
+        # Now try to make a move that doesn't block the check: move a non-related piece
+        c.bitboards['R'] = c.square_mask(sq('a',3))  # irrelevant rook somewhere else
         try:
             # attempt illegal move that doesn't block and see that it's allowed but leaves king in check
             # moving rook a1->a2 (non-related) should be allowed; but we want to test illegal move detection,
             # so try moving the rook from a1 to a2 which doesn't affect check: should raise ValueError if it leaves king in check
-            # However our move validation rejects only moves that leave own king in check; moving unrelated rook leaves king in check -> should raise
-            from_sq = sq('a',1)
-            to_sq = sq('a',2)
+            from_sq = sq('a',3)
+            to_sq = sq('a',4)
             try:
                 c.move_piece(from_sq, to_sq)
                 self.assert_true(False, "Move that leaves king in check should have raised ValueError")
@@ -115,9 +110,9 @@ class ChessTests:
         except Exception as e:
             self.assert_true(False, f"Check/illegal move test raised unexpected exception: {e}")
 
-        # Now make a legal blocking move: move rook from e2 to e3 to block (e3 = sq('e',3))
+        # Now make a legal blocking move: move rook from a3 to e3 to block (e3 = sq('e',3))
         try:
-            c.move_piece(sq('e',2), sq('e',3))
+            c.move_piece(sq('a',3), sq('e',3))
             # after this move, white should no longer be in check
             self.assert_true(not c.is_in_check(True), "Blocking move removed check")
             # test undo: undo last move and verify we are back in check
