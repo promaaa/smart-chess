@@ -20,22 +20,24 @@ class MinimaxEngine:
         
         if not legal_moves:
             return None
-            
+        
         best_move = None
-        best_score = float('-inf') if chess.white_to_move else float('inf')
+        # Sauvegarder qui doit jouer AVANT de commencer
+        current_player_is_white = chess.white_to_move
+        best_score = float('-inf') if current_player_is_white else float('inf')
         
         for move in legal_moves:
             # Jouer le coup
             chess.move_piece(move[0], move[1], promotion=move[2])
             
             # Évaluer la position résultante
-            score = self.minimax(chess, self.max_depth - 1, not chess.white_to_move)
+            score = self.minimax(chess, self.max_depth - 1, not current_player_is_white)
             
             # Annuler le coup
             chess.undo_move()
             
             # Mettre à jour le meilleur coup
-            if chess.white_to_move:
+            if current_player_is_white:
                 if score > best_score:
                     best_score = score
                     best_move = move
@@ -210,17 +212,10 @@ if __name__ == "__main__":
     test_minimax()
     print("\n" + "="*50 + "\n")
     test_game_with_different_evaluators()
-            from_sq, to_sq, promo = best_move
-            from_alg = f"{chr(ord('a') + from_sq % 8)}{from_sq // 8 + 1}"
-            to_alg = f"{chr(ord('a') + to_sq % 8)}{to_sq // 8 + 1}"
-            promo_str = promo if promo else ""
+    to_alg = f"{chr(ord('a') + to_sq % 8)}{to_sq // 8 + 1}"
+    promo_str = promo if promo else ""
             
-            print(f"Meilleur coup: {from_alg}{to_alg}{promo_str}")
-            chess.move_piece(from_sq, to_sq, promotion=promo)
-            chess.print_board()
-        else:
-            print("Aucun coup légal trouvé!")
-            break
+    print(f"Meilleur coup: {from_alg}{to_alg}{promo_str}")
+    chess.move_piece(from_sq, to_sq, promotion=promo)
+    chess.print_board()
 
-if __name__ == "__main__":
-    test_minimax()
