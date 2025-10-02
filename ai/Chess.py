@@ -51,12 +51,12 @@ class Chess:
         for rank in range(7, -1, -1):
             print(' '.join(board[rank*8:(rank+1)*8]))
         print()
-
-    # --- compute_* et helpers (inchangés logiquement) ---
-    def compute_king_moves(self, square, piece=None):
+    def compute_king_moves_basic(self, square, piece=None):
+        """
+        Mouvements basiques du roi (sans roque) pour éviter la récursion
+        """
         king_moves = np.uint64(0)
         directions = [1, -1, 8, -8, 7, -7, 9, -9]
-        occ = self.occupancy()
         own = np.uint64(0)
         if piece is not None:
             own = self.pieces_of_color(self.color_of_piece_char(piece))
@@ -68,7 +68,20 @@ class Chess:
                     if not (own & self.square_mask(target_square)):
                         king_moves |= self.square_mask(target_square)
 
-        # castling handled as before (uses is_square_attacked)
+        return king_moves
+    # --- compute_* et helpers (inchangés logiquement) ---
+    def compute_king_moves(self, square, piece=None):
+        """
+        Mouvements complets du roi (avec roque)
+        """
+        # Commencer par les mouvements basiques
+        king_moves = self.compute_king_moves_basic(square, piece)
+
+        # Ajouter le roque seulement si une pièce est spécifiée
+        if piece is None:
+            return king_moves
+
+        # Gestion du roque
         if piece == 'K':
             if self.castling_rights.get('K', False):
                 f1 = 5; g1 = 6; e1 = 4
@@ -259,32 +272,49 @@ class Chess:
                 if occ & self.square_mask(target):
                     break
         return attacks
-
+    def compute_pawn_attacks(self, square, piece):
+        """
+        Attaques du pion (utilisé par is_square_attacked)
+        """
+        attacks = np.uint64(0)
+        is_white = piece.isupper()
+        
+        if is_white:
+            # Pion blanc attaque vers le haut
+            if square % 8 > 0 and square + 7 < 64:  # Attaque diagonale gauche
+                attacks |= self.square_mask(square + 7)
+            if square % 8 < 7 and square + 9 < 64:  # Attaque diagonale droite
+                attacks |= self.square_mask(square + 9)
+        else:
+            # Pion noir attaque vers le bas
+            if square % 8 < 7 and square - 7 >= 0:  # Attaque diagonale droite
+                attacks |= self.square_mask(square - 7)
+            if square % 8 > 0 and square - 9 >= 0:  # Attaque diagonale gauche
+                attacks |= self.square_mask(square - 9)
+        
+        return attacks
     def is_square_attacked(self, square, by_white):
+        """
+        Version corrigée qui utilise compute_king_moves_basic pour éviter la récursion
+        """
         mask = self.square_mask(square)
-        # pawns
+        
+        # Vérifier les attaques de pions
         pawn_bb = self.bitboards['P'] if by_white else self.bitboards['p']
+        pawn_piece = 'P' if by_white else 'p'
         for i in range(64):
             if bool(pawn_bb & self.square_mask(i)):
-                if by_white:
-                    if i % 8 > 0 and i + 7 == square:
-                        return True
-                    if i % 8 < 7 and i + 9 == square:
-                        return True
-                else:
-                    if i % 8 < 7 and i - 7 == square:
-                        return True
-                    if i % 8 > 0 and i - 9 == square:
-                        return True
-
-        # knights
-        knight_bb = self.bitboards['N'] if by_white else self.bitboards['n']
-        for i in range(64):
-            if bool(knight_bb & self.square_mask(i)):
-                if self.compute_knight_moves(i, 'N' if by_white else 'n') & mask:
+                if self.compute_pawn_attacks(i, pawn_piece) & mask:
                     return True
 
-        # bishops & queens
+        # Vérifier les attaques de cavaliers
+        knight_bb = self.bitboards['N'] if by_white else self.bitboards['n']
+        knight_piece = 'N' if by_white else 'n'
+        for i in range(64):
+            if bool(knight_bb & self.square_mask(i)):
+                if self.compute_knight_moves(i, knight_piece) & mask:
+                    return True
+        # Vérifier les attaques de fous et dames (diagonales)
         bishop_bb = self.bitboards['B'] if by_white else self.bitboards['b']
         queen_bb = self.bitboards['Q'] if by_white else self.bitboards['q']
         for i in range(64):
@@ -292,22 +322,23 @@ class Chess:
                 if self.ray_attacks_from(i, [7, -7, 9, -9]) & mask:
                     return True
 
-        # rooks & queens
+        # Vérifier les attaques de tours et dames (lignes/colonnes)
         rook_bb = self.bitboards['R'] if by_white else self.bitboards['r']
         for i in range(64):
             if bool((rook_bb | queen_bb) & self.square_mask(i)):
                 if self.ray_attacks_from(i, [1, -1, 8, -8]) & mask:
                     return True
 
-        # king
+        # Vérifier les attaques du roi (UTILISER LA VERSION BASIQUE)
         king_bb = self.bitboards['K'] if by_white else self.bitboards['k']
+        king_piece = 'K' if by_white else 'k'
         for i in range(64):
             if bool(king_bb & self.square_mask(i)):
-                if self.compute_king_moves(i, 'K' if by_white else 'k') & mask:
+                # ✅ UTILISER compute_king_moves_basic au lieu de compute_king_moves
+                if self.compute_king_moves_basic(i, king_piece) & mask:
                     return True
 
         return False
-
     def is_in_check(self, white_color):
         king_piece = 'K' if white_color else 'k'
         king_bb = self.bitboards.get(king_piece, np.uint64(0))
