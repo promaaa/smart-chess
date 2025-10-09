@@ -81,6 +81,109 @@ class ChessEvaluator:
             if chess.bitboards.get('p', 0) & chess.square_mask(square):
                 score -= pawn_table[63 - square] / 100
                 
+        knight_table = [
+            -50,-40,-30,-30,-30,-30,-40,-50,
+            -40,-20,  0,  0,  0,  0,-20,-40,
+            -30,  0, 10, 15, 15, 10,  0,-30,
+            -30,  5, 15, 20, 20, 15,  5,-30,
+            -30,  0, 15, 20, 20, 15,  0,-30,
+            -30,  5, 10, 15, 15, 10,  5,-30,
+            -40,-20,  0,  5,  5,  0,-20,-40,
+            -50,-40,-30,-30,-30,-30,-40,-50
+        ]
+        # Évaluer les cavaliers blancs
+        for square in range(64):
+            if chess.bitboards.get('N', 0) & chess.square_mask(square):
+                score += knight_table[square] / 100
+        
+        # Évaluer les cavaliers noirs (table inversée)
+        for square in range(64):
+            if chess.bitboards.get('n', 0) & chess.square_mask(square):
+                score -= knight_table[63 - square] / 100
+
+        bishop_table = [
+            -20,-10,-10,-10,-10,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5, 10, 10,  5,  0,-10,
+            -10,  5,  5, 10, 10,  5,  5,-10,
+            -10,  0, 10, 10, 10, 10,  0,-10,
+            -10, 10, 10, 10, 10, 10, 10,-10,
+            -10,  5,  0,  0,  0,  0,  5,-10,
+            -20,-10,-10,-10,-10,-10,-10,-20
+        ]
+
+        # Évaluer les fous blancs
+        for square in range(64):
+            if chess.bitboards.get('B', 0) & chess.square_mask(square):
+                score += bishop_table[square] / 100
+
+        # Évaluer les fous noirs (table inversée)
+        for square in range(64):
+            if chess.bitboards.get('b', 0) & chess.square_mask(square):
+                score -= bishop_table[63 - square] / 100
+
+        rook_table = [
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5, 10, 10, 10, 10, 10, 10,  5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            0,  0,  0,  5,  5,  0,  0,  0
+            ]
+        
+        # Évaluer les tours blanches
+        for square in range(64):
+            if chess.bitboards.get('R', 0) & chess.square_mask(square):
+                score += rook_table[square] / 100
+        
+        # Évaluer les tours noires (table inversée)
+        for square in range(64):
+            if chess.bitboards.get('r', 0) & chess.square_mask(square):
+                score -= rook_table[63 - square] / 100
+    
+        queen_table = [
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+            -5,  0,  5,  5,  5,  5,  0, -5,
+            0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20
+        ]
+
+        # Évaluer la reine blanche
+        for square in range(64):
+            if chess.bitboards.get('Q', 0) & chess.square_mask(square):
+                score += queen_table[square] / 100
+        
+        # Évaluer les reines noires (table inversée)
+        for square in range(64):
+            if chess.bitboards.get('q', 0) & chess.square_mask(square):
+                score -= queen_table[63 - square] / 100
+
+        knight_table = [
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -20,-30,-30,-40,-40,-30,-30,-20,
+            -10,-20,-20,-20,-20,-20,-20,-10,
+            20, 20,  0,  0,  0,  0, 20, 20,
+            20, 30, 10,  0,  0, 10, 30, 20
+        ]
+
+        # Évaluer le roi blanc (milieu de partie)
+        for square in range(64):
+            if chess.bitboards.get('K', 0) & chess.square_mask(square):
+                score += knight_table[square] / 100
+        # Évaluer le roi noir (milieu de partie, table inversée)
+        for square in range(64):
+            if chess.bitboards.get('k', 0) & chess.square_mask(square):
+                score -= knight_table[63 - square] / 100
+        
         return score
     
     def _count_pseudo_legal_moves(self, chess, is_white):
