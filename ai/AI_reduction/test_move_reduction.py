@@ -9,11 +9,11 @@ import sys
 import os
 
 # Ajouter le répertoire parent au path pour les imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from Chess import Chess
 from evaluator import ChessEvaluator
-from ai.AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
+from AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
 
 def test_move_reduction_strategies():
     """Test de différentes stratégies de réduction"""

@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from Chess import Chess
 from evaluator import ChessEvaluator
-from iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
+from ai.AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
 
 def analyze_reduction_overhead():
     """Analyse l'overhead de la réduction des coups"""

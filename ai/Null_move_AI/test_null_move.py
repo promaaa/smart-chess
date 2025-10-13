@@ -8,12 +8,13 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Ajouter le dossier parent au path pour importer les modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from Chess import Chess
 from evaluator import ChessEvaluator
-from ai.Null_move_AI.null_move_engine import NullMovePruningEngine
-from ai.Old_AI.iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta
+from Null_move_AI.null_move_engine import NullMovePruningEngine
+from Old_AI.iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta
 
 def test_null_move_effectiveness():
     """Test l'efficacité du null-move sur différentes positions"""

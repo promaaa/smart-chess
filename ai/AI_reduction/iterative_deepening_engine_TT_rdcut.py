@@ -2,6 +2,12 @@ import time
 import hashlib
 import random
 import math
+import sys
+import os
+
+# Ajouter le dossier parent au path pour importer les modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from alphabeta_engine import AlphaBetaEngine
 
 

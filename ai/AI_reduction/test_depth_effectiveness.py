@@ -7,11 +7,12 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Ajouter le dossier parent au path pour importer les modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from Chess import Chess
 from evaluator import ChessEvaluator
-from ai.AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
+from AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
 
 def test_depth_progression():
     """Test l'effet de la réduction sur la progression en profondeur"""

@@ -5,8 +5,8 @@ Test de comparaison entre l'IA avec et sans table de transposition
 import time
 from Chess import Chess
 from evaluator import ChessEvaluator
-from iterative_deepening_engine import IterativeDeepeningAlphaBeta
-from iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta as IterativeDeepeningTT
+from ai.Old_AI.iterative_deepening_engine import IterativeDeepeningAlphaBeta
+from ai.Old_AI.iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta as IterativeDeepeningTT
 
 
 def test_transposition_table():

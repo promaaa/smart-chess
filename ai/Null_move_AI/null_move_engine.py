@@ -1,7 +1,12 @@
 import time
 import hashlib
-from iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta as BaseIterativeEngine
-from iterative_deepening_engine_TT import TranspositionEntry
+import sys
+import os
+
+# Ajouter le dossier parent au path pour importer les modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from Old_AI.iterative_deepening_engine_TT import IterativeDeepeningAlphaBeta as BaseIterativeEngine
+from Old_AI.iterative_deepening_engine_TT import TranspositionEntry
 
 
 class NullMovePruningEngine(BaseIterativeEngine):

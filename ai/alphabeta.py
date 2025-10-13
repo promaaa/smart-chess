@@ -13,8 +13,8 @@ Il est recommandé d'utiliser directement les nouveaux modules.
 
 # Imports pour la compatibilité
 from alphabeta_engine import AlphaBetaEngine
-from iterative_deepening_engine import IterativeDeepeningAlphaBeta
-from test_engines import test_alphabeta, test_iterative_deepening, compare_engines
+from ai.Old_AI.iterative_deepening_engine import IterativeDeepeningAlphaBeta
+from ai.Old_AI.test_engines import test_alphabeta, test_iterative_deepening, compare_engines
 
 # Réexporter pour la compatibilité
 __all__ = ['AlphaBetaEngine', 'IterativeDeepeningAlphaBeta']

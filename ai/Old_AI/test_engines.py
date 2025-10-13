@@ -2,7 +2,7 @@ import time
 from Chess import Chess
 from evaluator import ChessEvaluator
 from alphabeta_engine import AlphaBetaEngine
-from iterative_deepening_engine import IterativeDeepeningAlphaBeta
+from ai.Old_AI.iterative_deepening_engine import IterativeDeepeningAlphaBeta
 
 
 def test_alphabeta():
@@ -61,7 +61,6 @@ def compare_engines():
     chess.print_board()
     
     # Test Alpha-Beta à différentes profondeurs
-    for depth in [3, 4]:
         print(f"\n--- Profondeur {depth} ---")
         
         ab_engine = AlphaBetaEngine(max_depth=depth)

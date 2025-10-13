@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from Chess import Chess
 from evaluator import ChessEvaluator
-from iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
+from ai.AI_reduction.iterative_deepening_engine_TT_rdcut import IterativeDeepeningAlphaBeta
 
 def example_usage():
     """Exemple d'utilisation avec différentes configurations"""

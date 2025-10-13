@@ -26,7 +26,7 @@ Exemples:
 
 from .base_engine import BaseChessEngine
 from .alphabeta_engine import AlphaBetaEngine
-from .iterative_deepening_engine import IterativeDeepeningAlphaBeta
+from .Old_AI.iterative_deepening_engine import IterativeDeepeningAlphaBeta
 
 __all__ = [
     'BaseChessEngine',
