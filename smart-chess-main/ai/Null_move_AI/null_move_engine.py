@@ -53,6 +53,11 @@ class NullMovePruningEngine(BaseIterativeEngine):
         self.nodes_evaluated += 1
         original_alpha = alpha
         
+        # AJOUT: Vérifier le temps restant pour éviter les débordements
+        if hasattr(self, 'start_time') and self.start_time:
+            if time.time() - self.start_time > self.max_time:
+                raise TimeoutError("Temps limite atteint dans null-move")
+        
         # Générer le hash de la position
         position_hash = self._get_position_hash(chess)
         
