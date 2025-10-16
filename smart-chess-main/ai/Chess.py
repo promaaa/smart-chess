@@ -2,19 +2,20 @@ import numpy as np
 
 class Chess:
     def __init__(self):
+        # Use Python ints for bitboards to avoid numpy overhead in hot paths
         self.bitboards = {
-            'P': np.uint64(0x000000000000FF00),
-            'N': np.uint64(0x0000000000000042),
-            'B': np.uint64(0x0000000000000024),
-            'R': np.uint64(0x0000000000000081),
-            'Q': np.uint64(0x0000000000000008),
-            'K': np.uint64(0x0000000000000010),
-            'p': np.uint64(0x00FF000000000000),
-            'n': np.uint64(0x4200000000000000),
-            'b': np.uint64(0x2400000000000000),
-            'r': np.uint64(0x8100000000000000),
-            'q': np.uint64(0x0800000000000000),
-            'k': np.uint64(0x1000000000000000)
+            'P': 0x000000000000FF00,
+            'N': 0x0000000000000042,
+            'B': 0x0000000000000024,
+            'R': 0x0000000000000081,
+            'Q': 0x0000000000000008,
+            'K': 0x0000000000000010,
+            'p': 0x00FF000000000000,
+            'n': 0x4200000000000000,
+            'b': 0x2400000000000000,
+            'r': 0x8100000000000000,
+            'q': 0x0800000000000000,
+            'k': 0x1000000000000000
         }
         self.white_to_move = True
         self.castling_rights = {'K': True, 'Q': True, 'k': True, 'q': True}
@@ -22,21 +23,21 @@ class Chess:
         self.check = False
         self.history = []
 
-    # safe square_mask: do Python int shift then cast to np.uint64
+    # safe square_mask: return Python int mask (fast)
     def square_mask(self, sq):
-        return np.uint64(1 << int(sq))
+        return 1 << int(sq)
 
     def occupancy(self):
-        occ = np.uint64(0)
+        occ = 0
         for bb in self.bitboards.values():
-            occ |= bb
+            occ |= int(bb)
         return occ
 
     def pieces_of_color(self, white):
-        mask = np.uint64(0)
+        mask = 0
         for p, bb in self.bitboards.items():
             if (p.isupper() and white) or (p.islower() and not white):
-                mask |= bb
+                mask |= int(bb)
         return mask
 
     def color_of_piece_char(self, p):
@@ -55,9 +56,9 @@ class Chess:
         """
         Mouvements basiques du roi (sans roque) pour éviter la récursion
         """
-        king_moves = np.uint64(0)
+        king_moves = 0
         directions = [1, -1, 8, -8, 7, -7, 9, -9]
-        own = np.uint64(0)
+        own = 0
         if piece is not None:
             own = self.pieces_of_color(self.color_of_piece_char(piece))
 
@@ -116,9 +117,9 @@ class Chess:
         return king_moves
 
     def compute_knight_moves(self, square, piece=None):
-        knight_moves = np.uint64(0)
+        knight_moves = 0
         directions = [15, 17, 10, 6, -15, -17, -10, -6]
-        own = np.uint64(0)
+        own = 0
         if piece is not None:
             own = self.pieces_of_color(self.color_of_piece_char(piece))
         for direction in directions:
@@ -130,10 +131,10 @@ class Chess:
         return knight_moves
 
     def compute_pawn_moves(self, square, is_white):
-        pawn_moves = np.uint64(0)
+        pawn_moves = 0
         occ = self.occupancy()
         own = self.pieces_of_color(is_white)
-        enemy = self.occupancy() & ~own
+        enemy = occ & ~own
 
         if is_white:
             one_forward = square + 8
@@ -179,9 +180,9 @@ class Chess:
         return pawn_moves
 
     def compute_rook_moves(self, square, piece=None):
-        rook_moves = np.uint64(0)
+        rook_moves = 0
         occ = self.occupancy()
-        own = np.uint64(0)
+        own = 0
         if piece is not None:
             own = self.pieces_of_color(self.color_of_piece_char(piece))
         directions = [1, -1, 8, -8]
@@ -202,9 +203,9 @@ class Chess:
         return rook_moves
 
     def compute_bishop_moves(self, square, piece=None):
-        bishop_moves = np.uint64(0)
+        bishop_moves = 0
         occ = self.occupancy()
-        own = np.uint64(0)
+        own = 0
         if piece is not None:
             own = self.pieces_of_color(self.color_of_piece_char(piece))
         directions = [7, -7, 9, -9]
@@ -231,11 +232,11 @@ class Chess:
         piece = None
         from_mask = self.square_mask(square)
         for p, bitboard in self.bitboards.items():
-            if bitboard & from_mask:
+            if int(bitboard) & from_mask:
                 piece = p
                 break
         if piece is None:
-            return np.uint64(0)
+            return 0
 
         if piece in ['K', 'k']:
             return self.compute_king_moves(square, piece)
@@ -252,11 +253,11 @@ class Chess:
         elif piece in ['Q', 'q']:
             return self.compute_queen_moves(square, piece)
         else:
-            return np.uint64(0)
+            return 0
 
     def ray_attacks_from(self, square, directions):
         occ = self.occupancy()
-        attacks = np.uint64(0)
+        attacks = 0
         for direction in directions:
             target = square
             while True:
@@ -276,9 +277,9 @@ class Chess:
         """
         Attaques du pion (utilisé par is_square_attacked)
         """
-        attacks = np.uint64(0)
+        attacks = 0
         is_white = piece.isupper()
-        
+
         if is_white:
             # Pion blanc attaque vers le haut
             if square % 8 > 0 and square + 7 < 64:  # Attaque diagonale gauche
@@ -291,7 +292,7 @@ class Chess:
                 attacks |= self.square_mask(square - 7)
             if square % 8 > 0 and square - 9 >= 0:  # Attaque diagonale gauche
                 attacks |= self.square_mask(square - 9)
-        
+
         return attacks
     def is_square_attacked(self, square, by_white):
         """
@@ -299,58 +300,62 @@ class Chess:
         """
         mask = self.square_mask(square)
         
-        # Vérifier les attaques de pions
-        pawn_bb = self.bitboards['P'] if by_white else self.bitboards['p']
+        # Vérifier les attaques de pions (itérer uniquement sur bits posés)
+        pawn_bb = int(self.bitboards['P'] if by_white else self.bitboards['p'])
         pawn_piece = 'P' if by_white else 'p'
-        for i in range(64):
-            if bool(pawn_bb & self.square_mask(i)):
-                if self.compute_pawn_attacks(i, pawn_piece) & mask:
-                    return True
+        temp = pawn_bb
+        while temp:
+            i = (temp & -temp).bit_length() - 1
+            if self.compute_pawn_attacks(i, pawn_piece) & mask:
+                return True
+            temp &= temp - 1
 
         # Vérifier les attaques de cavaliers
-        knight_bb = self.bitboards['N'] if by_white else self.bitboards['n']
+        knight_bb = int(self.bitboards['N'] if by_white else self.bitboards['n'])
         knight_piece = 'N' if by_white else 'n'
-        for i in range(64):
-            if bool(knight_bb & self.square_mask(i)):
-                if self.compute_knight_moves(i, knight_piece) & mask:
-                    return True
+        temp = knight_bb
+        while temp:
+            i = (temp & -temp).bit_length() - 1
+            if self.compute_knight_moves(i, knight_piece) & mask:
+                return True
+            temp &= temp - 1
         # Vérifier les attaques de fous et dames (diagonales)
-        bishop_bb = self.bitboards['B'] if by_white else self.bitboards['b']
-        queen_bb = self.bitboards['Q'] if by_white else self.bitboards['q']
-        for i in range(64):
-            if bool((bishop_bb | queen_bb) & self.square_mask(i)):
-                if self.ray_attacks_from(i, [7, -7, 9, -9]) & mask:
-                    return True
+        bishop_bb = int(self.bitboards['B'] if by_white else self.bitboards['b'])
+        queen_bb = int(self.bitboards['Q'] if by_white else self.bitboards['q'])
+        temp = (bishop_bb | queen_bb)
+        while temp:
+            i = (temp & -temp).bit_length() - 1
+            if self.ray_attacks_from(i, [7, -7, 9, -9]) & mask:
+                return True
+            temp &= temp - 1
 
         # Vérifier les attaques de tours et dames (lignes/colonnes)
-        rook_bb = self.bitboards['R'] if by_white else self.bitboards['r']
-        for i in range(64):
-            if bool((rook_bb | queen_bb) & self.square_mask(i)):
-                if self.ray_attacks_from(i, [1, -1, 8, -8]) & mask:
-                    return True
+        rook_bb = int(self.bitboards['R'] if by_white else self.bitboards['r'])
+        temp = (rook_bb | queen_bb)
+        while temp:
+            i = (temp & -temp).bit_length() - 1
+            if self.ray_attacks_from(i, [1, -1, 8, -8]) & mask:
+                return True
+            temp &= temp - 1
 
         # Vérifier les attaques du roi (UTILISER LA VERSION BASIQUE)
-        king_bb = self.bitboards['K'] if by_white else self.bitboards['k']
+        king_bb = int(self.bitboards['K'] if by_white else self.bitboards['k'])
         king_piece = 'K' if by_white else 'k'
-        for i in range(64):
-            if bool(king_bb & self.square_mask(i)):
-                # ✅ UTILISER compute_king_moves_basic au lieu de compute_king_moves
-                if self.compute_king_moves_basic(i, king_piece) & mask:
-                    return True
+        temp = king_bb
+        while temp:
+            i = (temp & -temp).bit_length() - 1
+            if self.compute_king_moves_basic(i, king_piece) & mask:
+                return True
+            temp &= temp - 1
 
         return False
     def is_in_check(self, white_color):
         king_piece = 'K' if white_color else 'k'
-        king_bb = self.bitboards.get(king_piece, np.uint64(0))
+        king_bb = int(self.bitboards.get(king_piece, 0))
         if king_bb == 0:
             return False
-        king_square = None
-        for i in range(64):
-            if bool(king_bb & self.square_mask(i)):
-                king_square = i
-                break
-        if king_square is None:
-            return False
+        # find king square via bit-scan
+        king_square = (king_bb & -king_bb).bit_length() - 1
         return self.is_square_attacked(king_square, by_white=not white_color)
 
     def move_piece(self, from_sq: int, to_sq: int, promotion: str = None):
@@ -361,8 +366,7 @@ class Chess:
         from_mask = self.square_mask(from_sq)
         to_mask = self.square_mask(to_sq)
 
-        # sauvegarder un snapshot complet au cas où on doive restaurer
-        prev_bitboards = {k: int(v) for k, v in self.bitboards.items()}
+        # Préparer l'état précédent minimal (pas de snapshot complet):
         prev_castling = dict(self.castling_rights)
         prev_en_passant = self.en_passant_target
         prev_white_to_move = self.white_to_move
@@ -379,16 +383,14 @@ class Chess:
         if moving_piece is None:
             raise RuntimeError(f"Aucune pièce trouvée sur la case {from_sq}")
 
-        # Gérer capture normale sur la case de destination
+        # Gérer capture normale sur la case de destination (détecter avant mutation)
         for piece, bb in self.bitboards.items():
             if bb & to_mask:
                 captured_piece = piece
                 captured_square = to_sq
-                # retirer la pièce capturée (on modifiera l'état, on restaurera si nécessaire)
-                self.bitboards[piece] &= ~to_mask
                 break
 
-        # Gérer capture en passant
+        # Gérer capture en passant (détecter avant mutation)
         if moving_piece in ('P', 'p') and self.en_passant_target is not None and to_sq == self.en_passant_target:
             if moving_piece == 'P':  # blanc capture vers le haut
                 captured_square = to_sq - 8
@@ -396,10 +398,25 @@ class Chess:
             else:  # noir
                 captured_square = to_sq + 8
                 captured_piece = 'P'
-            # retirer la pièce capturée en passant
-            self.bitboards[captured_piece] &= ~self.square_mask(captured_square)
 
-        # Déplacer la pièce
+        # Avant d'appliquer la mutation, créer un enregistrement minimal pour undo
+        self.history.append({
+            'from': from_sq,
+            'to': to_sq,
+            'moving_piece': moving_piece,
+            'captured_piece': captured_piece,
+            'captured_square': captured_square,
+            'promotion': None,
+            'prev_castling': prev_castling,
+            'prev_en_passant': prev_en_passant,
+            'prev_white_to_move': prev_white_to_move,
+        })
+
+        # Appliquer la capture si présente (normale ou en-passant)
+        if captured_piece is not None and captured_square is not None:
+            self.bitboards[captured_piece] &= ~self.square_mask(int(captured_square))
+
+        # Déplacer la pièce (mutation en place)
         self.bitboards[moving_piece] &= ~from_mask
         self.bitboards[moving_piece] |= to_mask
 
@@ -416,14 +433,17 @@ class Chess:
             self.bitboards[moving_piece] &= ~to_mask
             # ajouter la pièce promue
             self.bitboards[promoted_piece] |= to_mask
+            # enregistrer dans l'historique
+            self.history[-1]['promotion'] = promoted_piece
         else:
             # si une promotion explicite est fournie
             if promotion and moving_piece in ('P', 'p'):
                 promoted_piece = promotion if moving_piece == 'P' else promotion.lower()
                 self.bitboards[moving_piece] &= ~to_mask
                 self.bitboards[promoted_piece] |= to_mask
+                self.history[-1]['promotion'] = promoted_piece
 
-        # Roque: déplacer la tour si nécessaire
+    # Roque: déplacer la tour si nécessaire
         if moving_piece in ('K', 'k') and abs(from_sq - to_sq) == 2:
             if moving_piece == 'K':
                 if to_sq == 6:   # petit roque
@@ -444,35 +464,23 @@ class Chess:
         self.update_castling_rights(moving_piece, from_sq)
         self.update_en_passant(moving_piece, from_sq, to_sq)
 
+        # Mettre à jour l'enregistrement d'historique (cohérence)
+        self.history[-1]['prev_castling'] = prev_castling
+        self.history[-1]['prev_en_passant'] = prev_en_passant
+
         # Vérifier la légalité : le camp qui a joué ne doit pas être en échec après le coup
         mover_is_white = moving_piece.isupper()
         try:
             illegal = self.is_in_check(mover_is_white)
         except Exception:
-            # en cas d'erreur lors du test d'échec, restaurer et remonter
+            # en cas d'erreur lors du test d'échec, considérer comme illégal
             illegal = True
 
         if illegal:
-            # restaurer l'état complet précédent
-            for k, v in prev_bitboards.items():
-                self.bitboards[k] = np.uint64(v)
-            self.castling_rights = dict(prev_castling)
-            self.en_passant_target = prev_en_passant
-            self.white_to_move = prev_white_to_move
+            # Utiliser undo_move() pour restaurer l'état via l'enregistrement minimal
+            # (undo_move() poppera l'entrée d'historique que nous avons ajoutée).
+            self.undo_move()
             raise ValueError("Illegal move: leaves king in check")
-
-        # Si légal, enregistrer un historique minimal (pour undo)
-        self.history.append({
-            'from': from_sq,
-            'to': to_sq,
-            'moving_piece': moving_piece,
-            'captured_piece': captured_piece,
-            'captured_square': captured_square,
-            'promotion': promotion if promotion else (promoted_piece if promotion_needed else None),
-            'prev_castling': prev_castling,
-            'prev_en_passant': prev_en_passant,
-            'prev_white_to_move': prev_white_to_move,
-        })
 
         # Changer le trait
         self.white_to_move = not self.white_to_move
@@ -504,7 +512,7 @@ class Chess:
             prev_bitboards = record['prev_bitboards']
             # restaurer chaque bitboard (on remet le type numpy.uint64 pour rester consistant)
             for k, v in prev_bitboards.items():
-                self.bitboards[k] = np.uint64(v)
+                self.bitboards[k] = int(v)
             self.en_passant_target = record.get('prev_en_passant')
             self.castling_rights = dict(record.get('prev_castling', {}))
             self.white_to_move = record.get('prev_white_to_move', self.white_to_move)

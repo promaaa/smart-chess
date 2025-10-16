@@ -24,7 +24,7 @@ class ChessTests:
         c = Chess()
         # Clear board and set minimal pieces for white kingside castling
         for k in list(c.bitboards.keys()):
-            c.bitboards[k] = np.uint64(0)
+            c.bitboards[k] = 0
         # place white king on e1 and rook on h1, no black pieces
         c.bitboards['K'] = c.square_mask(sq('e',1))
         c.bitboards['R'] = c.square_mask(sq('h',1))
@@ -45,7 +45,7 @@ class ChessTests:
         c = Chess()
         # clear board
         for k in list(c.bitboards.keys()):
-            c.bitboards[k] = np.uint64(0)
+            c.bitboards[k] = 0
         # white pawn on d5, black pawn on e7
         c.bitboards['P'] = c.square_mask(sq('d',5))
         c.bitboards['p'] = c.square_mask(sq('e',7))
@@ -68,7 +68,7 @@ class ChessTests:
         c = Chess()
         # clear board
         for k in list(c.bitboards.keys()):
-            c.bitboards[k] = np.uint64(0)
+            c.bitboards[k] = 0
         # white pawn on g7 ready to promote to g8
         c.bitboards['P'] = c.square_mask(sq('g',7))
         # ensure black has no pieces to interfere
@@ -85,7 +85,7 @@ class ChessTests:
         c = Chess()
         # clear board
         for k in list(c.bitboards.keys()):
-            c.bitboards[k] = np.uint64(0)
+            c.bitboards[k] = 0
         # place white king on e1, black rook on e8 (checking down the file)
         c.bitboards['K'] = c.square_mask(sq('e',1))
         c.bitboards['r'] = c.square_mask(sq('e',8))

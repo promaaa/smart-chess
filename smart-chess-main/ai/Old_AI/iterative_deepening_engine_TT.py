@@ -20,8 +20,11 @@ class IterativeDeepeningAlphaBeta(AlphaBetaEngine):
         super().__init__(max_depth, evaluator)
         self.max_time = max_time
         self.start_time = None
-        self.transposition_table = {}  # Hash -> TranspositionEntry
-        self.tt_size = tt_size         # Taille max de la table
+        # Fixed-size transposition table: array of slots. Each slot holds a tuple
+        # (key:int, depth:int, score:int/float, flag:str, best_move, age:int)
+        # or None if empty.
+        self.tt_size = tt_size         # Taille (nombre de slots)
+        self.transposition_table = [None] * self.tt_size
         self.search_age = 0            # Âge de la recherche courante
         self.tt_hits = 0              # Statistiques TT
         self.tt_misses = 0
@@ -54,6 +57,11 @@ class IterativeDeepeningAlphaBeta(AlphaBetaEngine):
                 current_best = self._search_at_depth(chess, depth)
                 if current_best:
                     best_move = current_best
+                    # record last depth reached by search
+                    try:
+                        self.last_depth = int(depth)
+                    except Exception:
+                        self.last_depth = depth
                     elapsed = time.time() - self.start_time
                     tt_efficiency = self.tt_hits / (self.tt_hits + self.tt_misses) * 100 if (self.tt_hits + self.tt_misses) > 0 else 0
                     print(f"Depth {depth}: Best move = {self._format_move(best_move)}, "
@@ -63,8 +71,37 @@ class IterativeDeepeningAlphaBeta(AlphaBetaEngine):
                 print(f"Recherche interrompue à la profondeur {depth}")
                 break
         
-        print(f"Table de transposition: {len(self.transposition_table)} entrées")
-        return best_move
+        # Count non-empty slots
+        filled = sum(1 for e in self.transposition_table if e is not None)
+        print(f"Table de transposition: {filled} entrées (slots: {self.tt_size})")
+        # Ensure we return a canonical tuple (from_sq:int, to_sq:int, promotion)
+        if best_move is None:
+            return None
+
+        try:
+            # best_move can be tuple-like or an object; try to canonicalize
+            if isinstance(best_move, tuple) and len(best_move) >= 2:
+                fm = (int(best_move[0]), int(best_move[1]), best_move[2] if len(best_move) >= 3 else None)
+            elif hasattr(best_move, 'from_sq') and hasattr(best_move, 'to_sq'):
+                fm = (int(best_move.from_sq), int(best_move.to_sq), getattr(best_move, 'promotion', None))
+            else:
+                # As a last resort, try to parse formatted string like e2e4
+                s = self._format_move(best_move)
+                from_sq = ord(s[0]) - ord('a') + (int(s[1]) - 1) * 8
+                to_sq = ord(s[2]) - ord('a') + (int(s[3]) - 1) * 8
+                promo = s[4] if len(s) > 4 else None
+                fm = (from_sq, to_sq, promo)
+        except Exception:
+            # If canonicalization fails, return the raw best_move (caller must handle)
+            return best_move
+
+        # store formatted last move for debugging/consumption
+        try:
+            self.last_move_formatted = self._format_move(fm)
+        except Exception:
+            self.last_move_formatted = None
+
+        return fm
     
     def _search_at_depth(self, chess, target_depth):
         """Recherche à une profondeur donnée avec table de transposition"""
@@ -121,63 +158,83 @@ class IterativeDeepeningAlphaBeta(AlphaBetaEngine):
         return self.alphabeta_with_tt(chess, depth, alpha, beta, is_maximizing)
     
     def _get_position_hash(self, chess):
-        """Génère un hash unique pour la position actuelle"""
-        # Créer une représentation de la position
-        position_str = ""
-        
-        # Ajouter l'état de chaque case
-        for square in range(64):
-            piece = self._get_piece_at(chess, square)
-            position_str += piece if piece else '.'
-        
-        # Ajouter qui doit jouer
-        position_str += 'W' if chess.white_to_move else 'B'
-        
-        # Ajouter les droits de roque
-        if hasattr(chess, 'castling_rights'):
-            for right in ['K', 'Q', 'k', 'q']:
-                position_str += right if chess.castling_rights.get(right, False) else '-'
-        
-        # Ajouter en passant si disponible
-        if hasattr(chess, 'en_passant_square') and chess.en_passant_square is not None:
-            position_str += f"ep{chess.en_passant_square}"
-        
-        # Générer le hash
-        return hashlib.md5(position_str.encode()).hexdigest()
+        """Génère un hash unique pour la position actuelle.
+
+        Essaie d'utiliser Zobrist (int rapide) si `compute_zobrist` est disponible
+        dans `optimized_chess`. Sinon, retombe sur l'ancien MD5 string.
+        """
+        try:
+            # Import local pour éviter la dépendance circulaire au top-level
+            from optimized_chess import compute_zobrist
+            key = compute_zobrist(chess)
+            # Utiliser un int convertible en clé de dict directement
+            return key
+        except Exception:
+            # Fallback: ancienne méthode MD5 (string)
+            position_str = ""
+            for square in range(64):
+                piece = self._get_piece_at(chess, square)
+                position_str += piece if piece else '.'
+
+            position_str += 'W' if chess.white_to_move else 'B'
+
+            if hasattr(chess, 'castling_rights'):
+                for right in ['K', 'Q', 'k', 'q']:
+                    position_str += right if chess.castling_rights.get(right, False) else '-'
+
+            if hasattr(chess, 'en_passant_square') and chess.en_passant_square is not None:
+                position_str += f"ep{chess.en_passant_square}"
+
+            return hashlib.md5(position_str.encode()).hexdigest()
     
     def _store_tt_entry(self, position_hash, depth, score, flag, best_move=None):
         """Stocke une entrée dans la table de transposition"""
-        # Gestion de la taille de la table
-        if len(self.transposition_table) >= self.tt_size:
-            # Remplacer l'entrée la plus ancienne
-            oldest_hash = min(self.transposition_table.keys(), 
-                             key=lambda h: self.transposition_table[h].age)
-            del self.transposition_table[oldest_hash]
-        
-        # Stocker la nouvelle entrée
-        entry = TranspositionEntry(depth, score, flag, best_move, self.search_age)
-        self.transposition_table[position_hash] = entry
+        # For fixed-size table we use index = position_hash % tt_size
+        idx = int(position_hash) % self.tt_size
+
+        # Each slot stores a tuple: (key, depth, score, flag, best_move, age)
+        slot = self.transposition_table[idx]
+
+        # Replace if slot is empty or new depth is greater or older (heuristic)
+        if slot is None:
+            self.transposition_table[idx] = (position_hash, depth, score, flag, best_move, self.search_age)
+            return
+
+        stored_key, stored_depth, _, _, _, stored_age = slot
+
+        # Heuristic: prefer deeper entries; if equal, prefer newer entries
+        if depth > stored_depth or (depth == stored_depth and self.search_age >= stored_age):
+            self.transposition_table[idx] = (position_hash, depth, score, flag, best_move, self.search_age)
+        # otherwise keep existing
     
     def _probe_tt(self, position_hash, depth, alpha, beta):
         """Interroge la table de transposition"""
-        if position_hash not in self.transposition_table:
+        idx = int(position_hash) % self.tt_size
+        slot = self.transposition_table[idx]
+        if slot is None:
             self.tt_misses += 1
             return None, None
-        
-        entry = self.transposition_table[position_hash]
+
+        stored_key, stored_depth, stored_score, stored_flag, stored_best_move, stored_age = slot
+
+        # If key doesn't match (collision), treat as miss
+        if stored_key != position_hash:
+            self.tt_misses += 1
+            return None, None
+
         self.tt_hits += 1
-        
+
         # Vérifier si la profondeur est suffisante
-        if entry.depth >= depth:
-            if entry.flag == 'exact':
-                return entry.score, entry.best_move
-            elif entry.flag == 'lower' and entry.score >= beta:
-                return entry.score, entry.best_move
-            elif entry.flag == 'upper' and entry.score <= alpha:
-                return entry.score, entry.best_move
-        
+        if stored_depth >= depth:
+            if stored_flag == 'exact':
+                return stored_score, stored_best_move
+            elif stored_flag == 'lower' and stored_score >= beta:
+                return stored_score, stored_best_move
+            elif stored_flag == 'upper' and stored_score <= alpha:
+                return stored_score, stored_best_move
+
         # Retourner au moins le meilleur coup même si le score n'est pas utilisable
-        return None, entry.best_move
+        return None, stored_best_move
     
     def alphabeta_with_tt(self, chess, depth, alpha, beta, is_maximizing):
         """
@@ -308,6 +365,7 @@ class IterativeDeepeningAlphaBeta(AlphaBetaEngine):
     
     def clear_tt(self):
         """Vide la table de transposition"""
-        self.transposition_table.clear()
+        # Reset fixed-size table
+        self.transposition_table = [None] * self.tt_size
         self.search_age = 0
         print("Table de transposition vidée")

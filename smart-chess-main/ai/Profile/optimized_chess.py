@@ -25,58 +25,58 @@ class OptimizedChessBitboards:
     
     def __init__(self):
         # OPTIMISATION 1: Cache pré-calculé pour square_mask (évite 6.3M calculs !)
-        self.SQUARE_MASKS = {i: np.uint64(1 << i) for i in range(64)}
+        self.SQUARE_MASKS = {i: (1 << i) for i in range(64)}
         
         # OPTIMISATION 2: Cache pour pieces_of_color
-        self._pieces_cache = {'white': np.uint64(0), 'black': np.uint64(0)}
+        self._pieces_cache = {'white': 0, 'black': 0}
         self._cache_valid = False
         
         # OPTIMISATION 3: Cache pour occupancy
-        self._occupancy_cache = np.uint64(0)
+        self._occupancy_cache = 0
         self._occupancy_valid = False
         
         # OPTIMISATION 4: Éviter les copies dans bitboards
         self._bitboards_dirty = True
 
-    def optimized_square_mask(self, sq: int) -> np.uint64:
+    def optimized_square_mask(self, sq: int) -> int:
         """Version optimisée de square_mask - O(1) au lieu de calcul"""
         return self.SQUARE_MASKS[sq]
     
-    def optimized_pieces_of_color(self, bitboards: Dict[str, np.uint64], white: bool) -> np.uint64:
+    def optimized_pieces_of_color(self, bitboards: Dict[str, int], white: bool) -> int:
         """Version optimisée de pieces_of_color avec cache"""
         if not self._cache_valid or self._bitboards_dirty:
             self._update_pieces_cache(bitboards)
         
         return self._pieces_cache['white'] if white else self._pieces_cache['black']
     
-    def optimized_occupancy(self, bitboards: Dict[str, np.uint64]) -> np.uint64:
+    def optimized_occupancy(self, bitboards: Dict[str, int]) -> int:
         """Version optimisée d'occupancy avec cache"""
         if not self._occupancy_valid or self._bitboards_dirty:
             self._update_occupancy_cache(bitboards)
         
         return self._occupancy_cache
     
-    def _update_pieces_cache(self, bitboards: Dict[str, np.uint64]):
+    def _update_pieces_cache(self, bitboards: Dict[str, int]):
         """Met à jour le cache des pièces par couleur"""
-        white_mask = np.uint64(0)
-        black_mask = np.uint64(0)
+        white_mask = 0
+        black_mask = 0
         
         for piece, bb in bitboards.items():
             if piece.isupper():  # Pièces blanches
-                white_mask |= bb
+                white_mask |= int(bb)
             else:  # Pièces noires
-                black_mask |= bb
+                black_mask |= int(bb)
         
         self._pieces_cache['white'] = white_mask
         self._pieces_cache['black'] = black_mask
         self._cache_valid = True
     
-    def _update_occupancy_cache(self, bitboards: Dict[str, np.uint64]):
+    def _update_occupancy_cache(self, bitboards: Dict[str, int]):
         """Met à jour le cache d'occupancy"""
-        occ = np.uint64(0)
+        occ = 0
         for bb in bitboards.values():
-            occ |= bb
-        
+            occ |= int(bb)
+
         self._occupancy_cache = occ
         self._occupancy_valid = True
     
@@ -151,18 +151,18 @@ class OptimizedChessBoard:
     def __init__(self):
         # Bitboards standard
         self.bitboards = {
-            'P': np.uint64(0x000000000000FF00),  # White pawns
-            'R': np.uint64(0x0000000000000081),  # White rooks  
-            'N': np.uint64(0x0000000000000042),  # White knights
-            'B': np.uint64(0x0000000000000024),  # White bishops
-            'Q': np.uint64(0x0000000000000008),  # White queen
-            'K': np.uint64(0x0000000000000010),  # White king
-            'p': np.uint64(0x00FF000000000000),  # Black pawns
-            'r': np.uint64(0x8100000000000000),  # Black rooks
-            'n': np.uint64(0x4200000000000000),  # Black knights  
-            'b': np.uint64(0x2400000000000000),  # Black bishops
-            'q': np.uint64(0x0800000000000000),  # Black queen
-            'k': np.uint64(0x1000000000000000),  # Black king
+            'P': 0x000000000000FF00,  # White pawns
+            'R': 0x0000000000000081,  # White rooks
+            'N': 0x0000000000000042,  # White knights
+            'B': 0x0000000000000024,  # White bishops
+            'Q': 0x0000000000000008,  # White queen
+            'K': 0x0000000000000010,  # White king
+            'p': 0x00FF000000000000,  # Black pawns
+            'r': 0x8100000000000000,  # Black rooks
+            'n': 0x4200000000000000,  # Black knights
+            'b': 0x2400000000000000,  # Black bishops
+            'q': 0x0800000000000000,  # Black queen
+            'k': 0x1000000000000000,  # Black king
         }
         
         # Intégration de l'optimiseur
@@ -175,15 +175,15 @@ class OptimizedChessBoard:
         self.check = False
         self.history = []
     
-    def square_mask(self, sq: int) -> np.uint64:
+    def square_mask(self, sq: int) -> int:
         """Version optimisée native"""
         return self.optimizer.optimized_square_mask(sq)
     
-    def pieces_of_color(self, white: bool) -> np.uint64:
+    def pieces_of_color(self, white: bool) -> int:
         """Version optimisée native"""
         return self.optimizer.optimized_pieces_of_color(self.bitboards, white)
     
-    def occupancy(self) -> np.uint64:
+    def occupancy(self) -> int:
         """Version optimisée native"""
         return self.optimizer.optimized_occupancy(self.bitboards)
     

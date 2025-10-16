@@ -36,7 +36,7 @@ class ChessEvaluator:
         """Évaluation matérielle basique"""
         score = 0
         for piece, bitboard in chess.bitboards.items():
-            piece_count = bin(int(bitboard)).count('1')
+            piece_count = int(bitboard).bit_count()
             score += self.piece_values.get(piece, 0) * piece_count
         return score
     
@@ -194,7 +194,7 @@ class ChessEvaluator:
             if piece and (piece.isupper() == is_white):
                 moves = chess.get_all_moves(square)
                 # Compter les bits à 1 dans moves
-                count += bin(int(moves)).count('1')
+                count += int(moves).bit_count()
         return count
     
     def _get_piece_at(self, chess, square):
