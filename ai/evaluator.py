@@ -224,6 +224,7 @@ class AdvancedChessEvaluator(ChessEvaluator):
         score += self._evaluate_king_safety(chess)
         score += self._evaluate_pawn_structure(chess)
         score += self._evaluate_piece_coordination(chess)
+        score += self._evaluate_bishop_pair(chess) # Bonus de la paire de fous
         
         return score
     
