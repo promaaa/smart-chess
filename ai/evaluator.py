@@ -291,3 +291,25 @@ class AdvancedChessEvaluator(ChessEvaluator):
                 score -= 10
                 
         return score
+
+    def _evaluate_bishop_pair(self, chess):
+        """
+        Bonus pour la paire de fous.
+        Donne un petit avantage (≈ +35 centipions) au camp qui possède les deux fous.
+        """
+        score = 0
+
+        # Compte le nombre de fous de chaque couleur
+        white_bishops = int(chess.bitboards.get('B', 0)).bit_count()
+        black_bishops = int(chess.bitboards.get('b', 0)).bit_count()
+
+        # Si les blancs ont deux fous ou plus → bonus
+        if white_bishops >= 2:
+            score += 35  # ≈ 0.35 pion
+
+        # Si les noirs ont deux fous ou plus → malus équivalent
+        if black_bishops >= 2:
+            score -= 35
+
+        return score
+
