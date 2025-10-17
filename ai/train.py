@@ -37,7 +37,11 @@ def load_data(filepath: str):
 
     # Le reste du code fonctionnera maintenant car il n'y a plus de NaN
     fens = df['FEN'].values
-    evaluations = df['Evaluation'].astype(int).values
+
+    # Define a scaling factor
+    EVAL_SCALE_FACTOR = 1000.0 
+    # Divide all evaluations by this factor
+    evaluations = (df['Evaluation'].astype(int).values) / EVAL_SCALE_FACTOR
     
     print(f"{len(fens)} positions valides chargées.")
     return fens, evaluations
@@ -95,9 +99,9 @@ def main():
                 # --- A. Forward Pass (Prédiction) ---
                 input_vector = evaluator._encode_board(chess_game).reshape(1, -1)
                 hidden_input = np.dot(input_vector, evaluator.weights1) + evaluator.biases1
-                hidden_output = np.maximum(0, hidden_input) # ReLU
+                hidden_output = np.where(hidden_input > 0, hidden_input, hidden_input * 0.01)
                 final_output = np.dot(hidden_output, evaluator.weights2) + evaluator.biases2
-                predicted_eval = final_output[0][0] * 100 # Multiplier par 100 comme dans la fonction d'éval
+                predicted_eval = final_output[0][0]
                 
                 # --- B. Calcul de l'erreur (Loss) ---
                 error = predicted_eval - actual_eval
@@ -105,7 +109,7 @@ def main():
                 
                 # --- C. Backpropagation (Calcul des gradients) ---
                 # Gradient pour la couche de sortie
-                grad_output = 2 * error / 100 # Diviser par 100 pour annuler la mise à l'échelle
+                grad_output = 2 * error
                 
                 # Gradients pour W2 et B2
                 dw2 += hidden_output.T * grad_output
@@ -115,11 +119,27 @@ def main():
                 grad_hidden_output = grad_output * evaluator.weights2.T
                 
                 # Gradient à travers l'activation ReLU
-                grad_hidden_input = grad_hidden_output * (hidden_input > 0)
+                grad_hidden_input = grad_hidden_output * np.where(hidden_input > 0, 1, 0.01)
                 
                 # Gradients pour W1 et B1
                 dw1 += input_vector.T.dot(grad_hidden_input)
                 db1 += grad_hidden_input.flatten()
+
+            GRADIENT_CLIP_VALUE = 1.0 # Limite la norme des gradients
+            
+            # Calculer la norme totale des gradients
+            total_norm_w1 = np.linalg.norm(dw1 / n_samples)
+            total_norm_w2 = np.linalg.norm(dw2 / n_samples)
+            total_norm = total_norm_w1 + total_norm_w2
+            
+            # Si la norme dépasse la limite, on la réduit
+            if total_norm > GRADIENT_CLIP_VALUE:
+                clip_scale = GRADIENT_CLIP_VALUE / total_norm
+                dw1 *= clip_scale
+                db1 *= clip_scale
+                dw2 *= clip_scale
+                db2 *= clip_scale
+            # ----------------------------------------
 
             # 4. Mettre à jour les poids (après chaque batch)
             n_samples = len(batch_fens)

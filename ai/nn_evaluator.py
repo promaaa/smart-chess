@@ -57,10 +57,19 @@ class NeuralNetworkEvaluator:
         # Cette fonction reste identique
         input_vector = self._encode_board(chess_instance)
         hidden_layer_input = np.dot(input_vector, self.weights1) + self.biases1
-        hidden_layer_output = np.maximum(0, hidden_layer_input)
+        hidden_layer_output = np.where(hidden_layer_input > 0, hidden_layer_input, hidden_layer_input * 0.01)
         output_layer_input = np.dot(hidden_layer_output, self.weights2) + self.biases2
-        score = output_layer_input[0][0]
-        return score * 100
+        # The raw score from the network (normalized value)
+        normalized_score = output_layer_input[0][0]
+        
+        # --- MODIFICATION ICI ---
+        # Define the same scaling factor used during training
+        EVAL_SCALE_FACTOR = 1000.0
+        # Convert the normalized score back to centipions
+        centipawn_score = normalized_score * EVAL_SCALE_FACTOR
+        # -----------------------
+        
+        return centipawn_score
 
 def save_weights(evaluator: NeuralNetworkEvaluator, filename: str):
     """Sauvegarde les poids et biais de l'évaluateur dans un fichier .npz."""
