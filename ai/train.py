@@ -10,7 +10,7 @@ from nn_evaluator import NeuralNetworkEvaluator, save_weights, load_evaluator_fr
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
 DATASET_PATH = "chessData.csv"       # Chemin vers votre fichier de données
 WEIGHTS_FILE = "chess_nn_weights.npz" # Fichier où les poids entraînés seront sauvegardés
-LEARNING_RATE = 0.00001             # À quelle vitesse le réseau apprend (petit = plus stable)
+LEARNING_RATE = 0.0001             # À quelle vitesse le réseau apprend (petit = plus stable)
 EPOCHS = 10                        # Nombre de fois où l'on parcourt tout le dataset
 BATCH_SIZE = 256                   # Nombre de positions traitées avant de mettre à jour les poids
 
