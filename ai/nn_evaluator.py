@@ -6,19 +6,22 @@ class NeuralNetworkEvaluator:
     Évaluateur de position d'échecs basé sur un réseau de neurones.
     L'architecture est séparée des poids pour permettre le chargement/sauvegarde.
     """
-    def __init__(self, weights1, biases1, weights2, biases2):
+    def __init__(self, weights1, biases1, weights2, biases2, weights3, biases3):
         """
-        Initialise le réseau avec des poids et des biais fournis en paramètre.
+        Initialise le réseau avec deux hidden layers.
         """
         self.weights1 = weights1
         self.biases1 = biases1
         self.weights2 = weights2
         self.biases2 = biases2
+        self.weights3 = weights3
+        self.biases3 = biases3
 
-        # Valider que les dimensions correspondent
-        # (Ajoute de la robustesse à votre code)
-        assert self.weights1.shape[1] == self.biases1.shape[1], "Dimension mismatch in hidden layer"
-        assert self.weights2.shape[0] == self.weights1.shape[1], "Dimension mismatch between layers"
+        # Vérifications de dimensions
+        assert self.weights1.shape[1] == self.biases1.shape[1], "Dimension mismatch in hidden layer 1"
+        assert self.weights2.shape[0] == self.weights1.shape[1], "Dimension mismatch between layer 1 and 2"
+        assert self.weights2.shape[1] == self.biases2.shape[1], "Dimension mismatch in hidden layer 2"
+        assert self.weights3.shape[0] == self.weights2.shape[1], "Dimension mismatch between layer 2 and output"
 
         # Mapping des pièces (inchangé)
         self.piece_to_index = {
@@ -28,16 +31,17 @@ class NeuralNetworkEvaluator:
         self.input_size = self.weights1.shape[0]
 
     @staticmethod
-    def create_untrained_network(input_size=768, hidden_size=32, output_size=1):
+    def create_untrained_network(input_size=768, hidden_size=128, output_size=1):
         """
-        Méthode statique pour créer un nouveau réseau avec des poids aléatoires.
-        Utile pour démarrer un nouvel entraînement.
+        Crée un réseau à deux hidden layers de 128 neurones chacun avec initialisation He.
         """
-        w1 = np.random.randn(input_size, hidden_size) * 0.1
+        w1 = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
         b1 = np.zeros((1, hidden_size))
-        w2 = np.random.randn(hidden_size, output_size) * 0.1
-        b2 = np.zeros((1, output_size))
-        return NeuralNetworkEvaluator(w1, b1, w2, b2)
+        w2 = np.random.randn(hidden_size, hidden_size) * np.sqrt(2.0 / hidden_size)
+        b2 = np.zeros((1, hidden_size))
+        w3 = np.random.randn(hidden_size, output_size) * np.sqrt(2.0 / hidden_size)
+        b3 = np.zeros((1, output_size))
+        return NeuralNetworkEvaluator(w1, b1, w2, b2, w3, b3)
 
     def _encode_board(self, chess_instance: Chess) -> np.ndarray:
         # Cette fonction reste identique
@@ -54,21 +58,13 @@ class NeuralNetworkEvaluator:
         return board_vector
 
     def evaluate_position(self, chess_instance: Chess) -> float:
-        # Cette fonction reste identique
         input_vector = self._encode_board(chess_instance)
-        hidden_layer_input = np.dot(input_vector, self.weights1) + self.biases1
-        hidden_layer_output = np.where(hidden_layer_input > 0, hidden_layer_input, hidden_layer_input * 0.01)
-        output_layer_input = np.dot(hidden_layer_output, self.weights2) + self.biases2
-        # The raw score from the network (normalized value)
+        h1 = np.maximum(0, np.dot(input_vector, self.weights1) + self.biases1)
+        h2 = np.maximum(0, np.dot(h1, self.weights2) + self.biases2)
+        output_layer_input = np.dot(h2, self.weights3) + self.biases3
         normalized_score = output_layer_input[0][0]
-        
-        # --- MODIFICATION ICI ---
-        # Define the same scaling factor used during training
         EVAL_SCALE_FACTOR = 1000.0
-        # Convert the normalized score back to centipions
         centipawn_score = normalized_score * EVAL_SCALE_FACTOR
-        # -----------------------
-        
         return centipawn_score
 
 def save_weights(evaluator: NeuralNetworkEvaluator, filename: str):
@@ -77,7 +73,9 @@ def save_weights(evaluator: NeuralNetworkEvaluator, filename: str):
              w1=evaluator.weights1,
              b1=evaluator.biases1,
              w2=evaluator.weights2,
-             b2=evaluator.biases2)
+             b2=evaluator.biases2,
+             w3=evaluator.weights3,
+             b3=evaluator.biases3)
     print(f"Poids sauvegardés dans {filename}")
 
 def load_evaluator_from_file(filename: str) -> NeuralNetworkEvaluator:
@@ -87,7 +85,9 @@ def load_evaluator_from_file(filename: str) -> NeuralNetworkEvaluator:
         weights1=data['w1'],
         biases1=data['b1'],
         weights2=data['w2'],
-        biases2=data['b2']
+        biases2=data['b2'],
+        weights3=data['w3'],
+        biases3=data['b3']
     )
 
 # --- COMMENT UTILISER CETTE NOUVELLE STRUCTURE ---

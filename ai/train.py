@@ -8,11 +8,13 @@ import os
 from nn_evaluator import NeuralNetworkEvaluator, save_weights, load_evaluator_from_file
 
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
-DATASET_PATH = "chessData.csv"       # Chemin vers votre fichier de données
+DATASET_PATH = "C:\\Users\\gauti\\OneDrive\\Documents\\UE commande\\chessData.csv"       # Chemin vers votre fichier de données
 WEIGHTS_FILE = "chess_nn_weights.npz" # Fichier où les poids entraînés seront sauvegardés
-LEARNING_RATE = 0.0001             # À quelle vitesse le réseau apprend (petit = plus stable)
+LEARNING_RATE = 0.0005            # Learning rate plus stable pour 2 couches
 EPOCHS = 10                        # Nombre de fois où l'on parcourt tout le dataset
-BATCH_SIZE = 256                   # Nombre de positions traitées avant de mettre à jour les poids
+BATCH_SIZE = 64                    # Batch plus petit pour stabiliser les updates
+# Redémarre proprement en supprimant d'anciens poids incompatibles (architecture changée)
+RESET_WEIGHTS = True
 
 def load_data(filepath: str):
     """Charge le dataset FEN,Evaluation et le nettoie."""
@@ -38,9 +40,8 @@ def load_data(filepath: str):
     # Le reste du code fonctionnera maintenant car il n'y a plus de NaN
     fens = df['FEN'].values
 
-    # Define a scaling factor
-    EVAL_SCALE_FACTOR = 1000.0 
-    # Divide all evaluations by this factor
+    # Normaliser les évaluations pour stabiliser l'entraînement
+    EVAL_SCALE_FACTOR = 1000.0
     evaluations = (df['Evaluation'].astype(int).values) / EVAL_SCALE_FACTOR
     
     print(f"{len(fens)} positions valides chargées.")
@@ -59,11 +60,18 @@ def main():
     # ---------------------------
     
     # 3. Initialiser le réseau de neurones
+    if RESET_WEIGHTS and os.path.exists(WEIGHTS_FILE):
+        print(f"Suppression des anciens poids incompatibles: {WEIGHTS_FILE}")
+        try:
+            os.remove(WEIGHTS_FILE)
+        except Exception as e:
+            print(f"Impossible de supprimer {WEIGHTS_FILE}: {e}")
+
     if os.path.exists(WEIGHTS_FILE):
         print(f"Chargement des poids existants depuis {WEIGHTS_FILE} pour continuer l'entraînement...")
         evaluator = load_evaluator_from_file(WEIGHTS_FILE)
     else:
-        print("Aucun fichier de poids trouvé. Création d'un nouveau réseau...")
+        print("Création d'un nouveau réseau (poids aléatoires)...")
         evaluator = NeuralNetworkEvaluator.create_untrained_network()
     
     # Créer une seule instance de l'échiquier pour la réutiliser
@@ -87,9 +95,10 @@ def main():
             batch_fens = fens_shuffled[i:i + BATCH_SIZE]
             batch_evals = evaluations_shuffled[i:i + BATCH_SIZE]
             
-            # Initialiser les gradients pour ce batch
+            # Initialiser les gradients pour ce batch (2 hidden layers)
             dw1, db1 = np.zeros_like(evaluator.weights1), np.zeros_like(evaluator.biases1)
             dw2, db2 = np.zeros_like(evaluator.weights2), np.zeros_like(evaluator.biases2)
+            dw3, db3 = np.zeros_like(evaluator.weights3), np.zeros_like(evaluator.biases3)
 
             # --- Forward Pass & Backpropagation sur le batch ---
             for fen, actual_eval in zip(batch_fens, batch_evals):
@@ -98,55 +107,62 @@ def main():
                 
                 # --- A. Forward Pass (Prédiction) ---
                 input_vector = evaluator._encode_board(chess_game).reshape(1, -1)
-                hidden_input = np.dot(input_vector, evaluator.weights1) + evaluator.biases1
-                hidden_output = np.where(hidden_input > 0, hidden_input, hidden_input * 0.01)
-                final_output = np.dot(hidden_output, evaluator.weights2) + evaluator.biases2
+                h1_in = np.dot(input_vector, evaluator.weights1) + evaluator.biases1
+                h1 = np.maximum(0, h1_in)
+                h2_in = np.dot(h1, evaluator.weights2) + evaluator.biases2
+                h2 = np.maximum(0, h2_in)
+                final_output = np.dot(h2, evaluator.weights3) + evaluator.biases3
                 predicted_eval = final_output[0][0]
-                
+
                 # --- B. Calcul de l'erreur (Loss) ---
                 error = predicted_eval - actual_eval
                 total_loss += error**2
-                
-                # --- C. Backpropagation (Calcul des gradients) ---
-                # Gradient pour la couche de sortie
-                grad_output = 2 * error
-                
-                # Gradients pour W2 et B2
-                dw2 += hidden_output.T * grad_output
-                db2 += grad_output
-                
-                # Gradient propagé à la couche cachée
-                grad_hidden_output = grad_output * evaluator.weights2.T
-                
-                # Gradient à travers l'activation ReLU
-                grad_hidden_input = grad_hidden_output * np.where(hidden_input > 0, 1, 0.01)
-                
-                # Gradients pour W1 et B1
-                dw1 += input_vector.T.dot(grad_hidden_input)
-                db1 += grad_hidden_input.flatten()
 
-            GRADIENT_CLIP_VALUE = 1.0 # Limite la norme des gradients
-            
-            # Calculer la norme totale des gradients
-            total_norm_w1 = np.linalg.norm(dw1 / n_samples)
-            total_norm_w2 = np.linalg.norm(dw2 / n_samples)
-            total_norm = total_norm_w1 + total_norm_w2
-            
-            # Si la norme dépasse la limite, on la réduit
-            if total_norm > GRADIENT_CLIP_VALUE:
-                clip_scale = GRADIENT_CLIP_VALUE / total_norm
-                dw1 *= clip_scale
-                db1 *= clip_scale
-                dw2 *= clip_scale
-                db2 *= clip_scale
-            # ----------------------------------------
+                # --- C. Backpropagation (Calcul des gradients) ---
+                grad_output = 2 * error
+                # Output -> h2
+                dw3 += h2.T * grad_output
+                db3 += grad_output
+                grad_h2 = grad_output * evaluator.weights3.T
+                grad_h2[h2_in <= 0] = 0
+
+                # h2 -> h1
+                dw2 += h1.T.dot(grad_h2)
+                db2 += grad_h2.flatten()
+                grad_h1 = grad_h2.dot(evaluator.weights2.T)
+                grad_h1[h1_in <= 0] = 0
+
+                # h1 -> input
+                dw1 += input_vector.T.dot(grad_h1)
+                db1 += grad_h1.flatten()
+
+            n_samples = len(batch_fens)
+
+            # Gradient clipping global (stabilisation)
+            CLIP = 5.0
+            # Norme globale des gradients (Frobenius)
+            g1 = dw1; g1b = db1
+            g2 = dw2; g2b = db2
+            g3 = dw3; g3b = db3
+            total_norm = 0.0
+            for g in [g1, g1b, g2, g2b, g3, g3b]:
+                total_norm += float(np.linalg.norm(g / max(n_samples, 1))**2)
+            total_norm = np.sqrt(total_norm)
+            if total_norm > CLIP and total_norm > 0:
+                scale = CLIP / total_norm
+                dw1 *= scale; db1 *= scale
+                dw2 *= scale; db2 *= scale
+                dw3 *= scale; db3 *= scale
 
             # 4. Mettre à jour les poids (après chaque batch)
-            n_samples = len(batch_fens)
             evaluator.weights1 -= LEARNING_RATE * (dw1 / n_samples)
             evaluator.biases1 -= LEARNING_RATE * (db1 / n_samples)
             evaluator.weights2 -= LEARNING_RATE * (dw2 / n_samples)
             evaluator.biases2 -= LEARNING_RATE * (db2 / n_samples)
+            evaluator.weights3 -= LEARNING_RATE * (dw3 / n_samples)
+            evaluator.biases3 -= LEARNING_RATE * (db3 / n_samples)
+            evaluator.weights3 -= LEARNING_RATE * (dw3 / n_samples)
+            evaluator.biases3 -= LEARNING_RATE * (db3 / n_samples)
 
             # Mettre à jour la description de la barre de progression
             avg_loss = np.sqrt(total_loss / ((i // BATCH_SIZE + 1) * BATCH_SIZE))
