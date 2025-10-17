@@ -646,3 +646,35 @@ class Chess:
         # Pion noir avance de 2 cases
         elif moving_piece == 'p' and from_sq // 8 == 6 and to_sq // 8 == 4:
             self.en_passant_target = from_sq - 8
+
+# AJOUTEZ CETTE MÉTHODE DANS VOTRE CLASSE Chess DANS LE FICHIER Chess.py
+
+    def load_fen(self, fen_string: str):
+        """
+        Charge une position d'échecs à partir d'une chaîne FEN.
+        Met à jour les bitboards internes.
+        (Version simplifiée qui ne gère que la position des pièces).
+        """
+        # Réinitialiser tous les bitboards
+        for piece in self.bitboards.keys():
+            self.bitboards[piece] = 0
+
+        parts = fen_string.split(' ')
+        piece_placement = parts[0]
+        
+        rank = 7
+        file = 0
+        for char in piece_placement:
+            if char.isalpha():
+                self.bitboards[char] |= (1 << (rank * 8 + file))
+                file += 1
+            elif char.isdigit():
+                file += int(char)
+            elif char == '/':
+                rank -= 1
+                file = 0
+        
+        # Vous pouvez étendre cette fonction pour gérer aussi le trait,
+        # les roques, etc., si votre évaluation en a besoin.
+        if len(parts) > 1:
+            self.white_to_move = (parts[1] == 'w')
