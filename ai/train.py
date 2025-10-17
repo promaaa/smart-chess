@@ -4,37 +4,65 @@ from tqdm import tqdm  # Pour une belle barre de progression
 
 # Assurez-vous que ces fichiers sont dans le même dossier
 from Chess import Chess
-from nn_evaluator import NeuralNetworkEvaluator, save_weights
+import os
+from nn_evaluator import NeuralNetworkEvaluator, save_weights, load_evaluator_from_file
 
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
-DATASET_PATH = "dataset.csv"       # Chemin vers votre fichier de données
+DATASET_PATH = "chessData.csv"       # Chemin vers votre fichier de données
 WEIGHTS_FILE = "chess_nn_weights.npz" # Fichier où les poids entraînés seront sauvegardés
-LEARNING_RATE = 0.001              # À quelle vitesse le réseau apprend (petit = plus stable)
+LEARNING_RATE = 0.00001             # À quelle vitesse le réseau apprend (petit = plus stable)
 EPOCHS = 10                        # Nombre de fois où l'on parcourt tout le dataset
 BATCH_SIZE = 256                   # Nombre de positions traitées avant de mettre à jour les poids
 
 def load_data(filepath: str):
-    """Charge le dataset FEN,Evaluation depuis un fichier CSV."""
+    """Charge le dataset FEN,Evaluation et le nettoie."""
     print(f"Chargement du dataset depuis {filepath}...")
-    df = pd.read_csv(filepath)
     
-    # Extraire les colonnes FEN et Evaluation
-    fens = df['FEN,Evaluation'].apply(lambda x: ' '.join(x.split(' ')[:-1])).values
-    evaluations = df['FEN,Evaluation'].apply(lambda x: int(x.split(' ')[-1])).values
+    df = pd.read_csv(
+        filepath, 
+        names=['FEN', 'Evaluation'], 
+        skiprows=1,
+        comment='#'
+    )
     
-    print(f"{len(fens)} positions chargées.")
+    # --- AJOUT DE L'ÉTAPE DE NETTOYAGE ---
+    initial_count = len(df)
+    # Supprime toutes les lignes où au moins une valeur est manquante (NaN)
+    df.dropna(inplace=True) 
+    
+    cleaned_count = len(df)
+    if initial_count > cleaned_count:
+        print(f"Nettoyage : {initial_count - cleaned_count} lignes corrompues (avec des valeurs manquantes) ont été supprimées.")
+    # ------------------------------------
+
+    # Le reste du code fonctionnera maintenant car il n'y a plus de NaN
+    fens = df['FEN'].values
+    evaluations = df['Evaluation'].astype(int).values
+    
+    print(f"{len(fens)} positions valides chargées.")
     return fens, evaluations
 
 def main():
-    """Fonction principale pour l'entraînement."""
     # 1. Charger les données
     fens, evaluations = load_data(DATASET_PATH)
     
-    # 2. Initialiser le réseau de neurones
-    # Crée un réseau avec des poids aléatoires, prêt à être entraîné
-    evaluator = NeuralNetworkEvaluator.create_untrained_network()
+    # 2. Mélanger le jeu de données de manière globale avant de commencer
+    # Cela garantit que même les exécutions courtes utilisent des données variées.
+    print("Mélange initial du jeu de données...")
+    permutation = np.random.permutation(len(fens))
+    fens = fens[permutation]
+    evaluations = evaluations[permutation]
+    # ---------------------------
     
-    # Créer une seule instance de l'échiquier pour la réutiliser (plus efficace)
+    # 3. Initialiser le réseau de neurones
+    if os.path.exists(WEIGHTS_FILE):
+        print(f"Chargement des poids existants depuis {WEIGHTS_FILE} pour continuer l'entraînement...")
+        evaluator = load_evaluator_from_file(WEIGHTS_FILE)
+    else:
+        print("Aucun fichier de poids trouvé. Création d'un nouveau réseau...")
+        evaluator = NeuralNetworkEvaluator.create_untrained_network()
+    
+    # Créer une seule instance de l'échiquier pour la réutiliser
     chess_game = Chess()
 
     print("Début de l'entraînement...")
@@ -103,6 +131,9 @@ def main():
             # Mettre à jour la description de la barre de progression
             avg_loss = np.sqrt(total_loss / ((i // BATCH_SIZE + 1) * BATCH_SIZE))
             progress_bar.set_postfix({"loss": f"{avg_loss:.2f}"})
+
+        print(f"\nFin de l'époque {epoch + 1}. Sauvegarde des poids intermédiaires...")
+        save_weights(evaluator, WEIGHTS_FILE)
 
     print("Entraînement terminé.")
     
