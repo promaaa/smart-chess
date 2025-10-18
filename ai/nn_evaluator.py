@@ -31,7 +31,7 @@ class NeuralNetworkEvaluator:
         self.input_size = self.weights1.shape[0]
 
     @staticmethod
-    def create_untrained_network(input_size=768, hidden_size=128, output_size=1):
+    def create_untrained_network(input_size=768, hidden_size=256, output_size=1):
         """
         Crée un réseau à deux hidden layers de 128 neurones chacun avec initialisation He.
         """

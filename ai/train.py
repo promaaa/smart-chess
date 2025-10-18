@@ -10,18 +10,24 @@ from nn_evaluator import NeuralNetworkEvaluator, save_weights, load_evaluator_fr
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
 DATASET_PATH = "C:\\Users\\gauti\\OneDrive\\Documents\\UE commande\\chessData.csv"       # Chemin vers votre fichier de données
 WEIGHTS_FILE = "chess_nn_weights.npz" # Fichier où les poids entraînés seront sauvegardés
-LEARNING_RATE = 0.0005            # Learning rate plus stable pour 2 couches
-EPOCHS = 10                      # Nombre de fois où l'on parcourt tout le dataset
+LEARNING_RATE = 0.001            # Learning rate augmenté pour débloquer la stagnation
+EPOCHS = 20                      # Plus d'epochs pour laisser le temps d'apprendre
 BATCH_SIZE = 64                    # Batch plus petit pour stabiliser les updates
 # Redémarre proprement en supprimant d'anciens poids incompatibles (architecture changée)
-RESET_WEIGHTS = False
+RESET_WEIGHTS = True
 # Mode debug: overfit sur un très petit lot pour valider l'apprentissage
 OVERFIT_TINY = False
 OVERFIT_N = 32
+
+# Dataset sampling : utiliser un sous-ensemble pour accélérer l'entraînement
+# Avec 13M positions, utiliser 100-500k suffit largement !
+USE_SAMPLING = True
+MAX_SAMPLES = 200000  # 200k positions = ~10-15min par epoch au lieu de 4h
 # Afficher des stats de debug sur le premier batch (moyennes, écarts-types, RMSE, corrélation)
-DEBUG_STATS = False
+DEBUG_STATS = True
 # En mode overfit, on permet un meilleur flux de gradient et des updates plus fortes
-USE_LEAKY_RELU = True if OVERFIT_TINY else False
+# En mode normal aussi, LeakyReLU évite les dead neurons (problème de stagnation précoce)
+USE_LEAKY_RELU = True
 LEAKY_ALPHA = 0.01
 # Optimiseur Adam (pas adaptatifs)
 USE_ADAM = True
@@ -31,6 +37,16 @@ ADAM_EPS = 1e-8
 
 # Limiter l'évaluation de fin d'époque sur grands jeux de données (None pour désactiver)
 EVAL_MAX_SAMPLES = 2000
+
+# Learning rate scheduler (réduit le LR si la loss stagne)
+USE_LR_SCHEDULER = True
+LR_PATIENCE = 2  # Nombre d'epochs sans amélioration avant de réduire le LR
+LR_FACTOR = 0.5  # Facteur de réduction (multiplier par 0.5)
+
+# Learning rate warmup (critique pour éviter stagnation précoce)
+USE_LR_WARMUP = True
+WARMUP_EPOCHS = 3  # Augmente progressivement le LR pendant les 3 premières epochs
+WARMUP_START_LR = 0.0001  # LR initial très faible
 
 def load_data(filepath: str):
     """Charge le dataset FEN,Evaluation et le nettoie."""
@@ -66,6 +82,17 @@ def load_data(filepath: str):
 def main():
     # 1. Charger les données
     fens, evaluations = load_data(DATASET_PATH)
+    
+    print(f"Dataset complet: {len(fens)} positions")
+    
+    # Échantillonnage intelligent du dataset
+    if USE_SAMPLING and len(fens) > MAX_SAMPLES:
+        print(f"Échantillonnage: {MAX_SAMPLES} positions sur {len(fens)} ({100*MAX_SAMPLES/len(fens):.1f}%)")
+        # Échantillonnage stratifié pour garder la diversité
+        idx = np.random.choice(len(fens), size=MAX_SAMPLES, replace=False)
+        fens = fens[idx]
+        evaluations = evaluations[idx]
+        print(f"✓ Dataset réduit à {len(fens)} positions")
     
     # 2. Mélanger le jeu de données de manière globale avant de commencer
     # Cela garantit que même les exécutions courtes utilisent des données variées.
@@ -125,12 +152,36 @@ def main():
         adam_step = 0
 
     print("Début de l'entraînement...")
+    print(f"\n{'='*70}")
+    print(f"Configuration:")
+    print(f"  Dataset: {len(fens):,} positions")
+    print(f"  Architecture: 768 → 256 → 256 → 1")
+    print(f"  Learning rate: {LEARNING_RATE} (Adam: {USE_ADAM})")
+    print(f"  LR Warmup: {USE_LR_WARMUP} ({WARMUP_START_LR if USE_LR_WARMUP else 'N/A'} → {LEARNING_RATE} over {WARMUP_EPOCHS if USE_LR_WARMUP else 0} epochs)")
+    print(f"  LR Scheduler: {USE_LR_SCHEDULER} (patience: {LR_PATIENCE if USE_LR_SCHEDULER else 'N/A'})")
+    print(f"  Batch size: {batch_size}")
+    print(f"  Epochs: {EPOCHS}")
+    print(f"  Éval échantillon: {EVAL_MAX_SAMPLES if EVAL_MAX_SAMPLES else 'Tout le dataset'}")
+    print(f"{'='*70}\n")
     # Learning rate effectif (plus grand en overfit tiny pour accélérer la convergence)
     lr = LEARNING_RATE * (10.0 if OVERFIT_TINY else 1.0)
     # Accélérer la montée en amplitude des prédictions en overfit
     out_lr = lr * 20.0 if OVERFIT_TINY else lr
     # 3. Boucle d'entraînement principale
+    
+    # Tracking pour le LR scheduler
+    best_rmse = float('inf')
+    epochs_without_improvement = 0
+    
     for epoch in range(EPOCHS):
+        # LR Warmup: augmente progressivement le LR pendant les premières epochs
+        if USE_LR_WARMUP and epoch < WARMUP_EPOCHS and not OVERFIT_TINY:
+            # Interpolation linéaire du LR
+            warmup_progress = (epoch + 1) / WARMUP_EPOCHS
+            lr = WARMUP_START_LR + (LEARNING_RATE - WARMUP_START_LR) * warmup_progress
+            out_lr = lr
+            print(f"🔥 Warmup epoch {epoch+1}/{WARMUP_EPOCHS}: LR = {lr:.6f}")
+        
         total_loss = 0
         
         # Mélanger les données (désactivé en overfit tiny pour stabilité et reproductibilité)
@@ -328,7 +379,57 @@ def main():
             targets_all = np.array(targets_all)
             rmse_all = float(np.sqrt(np.mean((preds_all - targets_all) ** 2)))
             corr_all = float(np.corrcoef(preds_all, targets_all)[0, 1]) if len(preds_all) > 1 else float('nan')
-            print(f"[EPOCH {epoch+1}] FULLSET RMSE={rmse_all:.4f}; corr={corr_all:.4f}; preds std={preds_all.std():.4f}; targets std={targets_all.std():.4f}")
+            
+            # Baseline RMSE (toujours prédire la moyenne)
+            baseline_rmse = targets_all.std()
+            improvement = 100 * (1 - rmse_all / baseline_rmse) if baseline_rmse > 0 else 0
+            
+            # Affichage amélioré avec contexte
+            print(f"\n{'='*70}")
+            print(f"EPOCH {epoch+1}/{EPOCHS} - Évaluation sur {len(eval_fens)} positions")
+            print(f"{'='*70}")
+            print(f"  RMSE:        {rmse_all:.4f}  (baseline: {baseline_rmse:.4f})")
+            print(f"  Amélioration: {improvement:+.1f}% vs baseline")
+            print(f"  Corrélation: {corr_all:.4f}")
+            print(f"  Std preds:   {preds_all.std():.4f}  (cible: {targets_all.std():.4f})")
+            print(f"  Mean preds:  {preds_all.mean():.4f}  (cible: {targets_all.mean():.4f})")
+            
+            # Indicateurs de santé
+            if corr_all > 0.5:
+                print(f"  ✓ Corrélation excellente!")
+            elif corr_all > 0.3:
+                print(f"  ✓ Corrélation bonne, continue!")
+            elif corr_all > 0.1:
+                print(f"  → Corrélation faible mais en progrès")
+            else:
+                print(f"  ⚠ Corrélation très faible - vérifier l'apprentissage")
+                
+            if improvement > 50:
+                print(f"  ✓ Performance excellente!")
+            elif improvement > 30:
+                print(f"  ✓ Bon apprentissage!")
+            elif improvement > 10:
+                print(f"  → Apprentissage en cours")
+            else:
+                print(f"  ⚠ Faible amélioration - vérifier hyperparamètres")
+            print(f"{'='*70}\n")
+            
+            # Learning rate scheduler
+            if USE_LR_SCHEDULER and not OVERFIT_TINY:
+                # Ne commence le scheduler qu'après le warmup
+                if not USE_LR_WARMUP or epoch >= WARMUP_EPOCHS:
+                    if rmse_all < best_rmse - 0.01:  # Amélioration significative (>0.01)
+                        best_rmse = rmse_all
+                        epochs_without_improvement = 0
+                    else:
+                        epochs_without_improvement += 1
+                        if epochs_without_improvement >= LR_PATIENCE:
+                            old_lr = lr
+                            lr *= LR_FACTOR
+                            out_lr = lr
+                            print(f"  📉 LR réduit: {old_lr:.6f} → {lr:.6f} (stagnation détectée)")
+                            epochs_without_improvement = 0
+                        
         except Exception as e:
             print(f"[EPOCH {epoch+1}] eval error: {e}")
 
