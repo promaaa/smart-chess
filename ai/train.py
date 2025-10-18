@@ -14,7 +14,7 @@ LEARNING_RATE = 0.001            # Learning rate augmenté pour débloquer la st
 EPOCHS = 20                      # Plus d'epochs pour laisser le temps d'apprendre
 BATCH_SIZE = 64                    # Batch plus petit pour stabiliser les updates
 # Redémarre proprement en supprimant d'anciens poids incompatibles (architecture changée)
-RESET_WEIGHTS = True
+RESET_WEIGHTS = False
 # Mode debug: overfit sur un très petit lot pour valider l'apprentissage
 OVERFIT_TINY = False
 OVERFIT_N = 32
