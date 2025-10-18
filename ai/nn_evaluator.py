@@ -67,21 +67,44 @@ class NeuralNetworkEvaluator:
         centipawn_score = normalized_score * EVAL_SCALE_FACTOR
         return centipawn_score
 
-def save_weights(evaluator: NeuralNetworkEvaluator, filename: str):
-    """Sauvegarde les poids et biais de l'évaluateur dans un fichier .npz."""
-    np.savez(filename,
-             w1=evaluator.weights1,
-             b1=evaluator.biases1,
-             w2=evaluator.weights2,
-             b2=evaluator.biases2,
-             w3=evaluator.weights3,
-             b3=evaluator.biases3)
-    print(f"Poids sauvegardés dans {filename}")
+def save_weights(evaluator: NeuralNetworkEvaluator, filename: str, adam_moments=None):
+    """
+    Sauvegarde les poids et biais de l'évaluateur dans un fichier .npz.
+    
+    Args:
+        evaluator: L'évaluateur dont on veut sauvegarder les poids
+        filename: Nom du fichier de sauvegarde
+        adam_moments: Optionnel - dictionnaire contenant les moments Adam 
+                     {'m_w1', 'v_w1', 'm_b1', 'v_b1', ..., 'adam_step'}
+    """
+    save_dict = {
+        'w1': evaluator.weights1,
+        'b1': evaluator.biases1,
+        'w2': evaluator.weights2,
+        'b2': evaluator.biases2,
+        'w3': evaluator.weights3,
+        'b3': evaluator.biases3
+    }
+    
+    # Ajouter les moments Adam si fournis
+    if adam_moments is not None:
+        save_dict.update(adam_moments)
+    
+    np.savez(filename, **save_dict)
+    if adam_moments is not None:
+        print(f"Poids et moments Adam sauvegardés dans {filename}")
+    else:
+        print(f"Poids sauvegardés dans {filename}")
 
-def load_evaluator_from_file(filename: str) -> NeuralNetworkEvaluator:
-    """Charge les poids d'un fichier et crée une instance de l'évaluateur."""
+def load_evaluator_from_file(filename: str):
+    """
+    Charge les poids d'un fichier et crée une instance de l'évaluateur.
+    
+    Returns:
+        tuple: (evaluator, adam_moments) où adam_moments est None si pas de moments sauvegardés
+    """
     data = np.load(filename)
-    return NeuralNetworkEvaluator(
+    evaluator = NeuralNetworkEvaluator(
         weights1=data['w1'],
         biases1=data['b1'],
         weights2=data['w2'],
@@ -89,6 +112,15 @@ def load_evaluator_from_file(filename: str) -> NeuralNetworkEvaluator:
         weights3=data['w3'],
         biases3=data['b3']
     )
+    
+    # Charger les moments Adam s'ils existent
+    adam_moments = None
+    adam_keys = ['m_w1', 'v_w1', 'm_b1', 'v_b1', 'm_w2', 'v_w2', 
+                 'm_b2', 'v_b2', 'm_w3', 'v_w3', 'm_b3', 'v_b3', 'adam_step']
+    if all(key in data for key in adam_keys):
+        adam_moments = {key: data[key] for key in adam_keys}
+    
+    return evaluator, adam_moments
 
 # --- COMMENT UTILISER CETTE NOUVELLE STRUCTURE ---
 if __name__ == '__main__':
@@ -110,11 +142,13 @@ if __name__ == '__main__':
     print(f"\n--- Chargement du réseau depuis le fichier '{WEIGHTS_FILE}' ---")
     
     # Supposons que notre programme vient de démarrer. On charge les poids.
-    production_evaluator = load_evaluator_from_file(WEIGHTS_FILE)
+    production_evaluator, adam_moments = load_evaluator_from_file(WEIGHTS_FILE)
     
     # L'évaluation doit être IDENTIQUE à celle du réseau que nous avons sauvegardé
     score2 = production_evaluator.evaluate_position(game)
     print(f"Score du réseau chargé : {score2:.2f}")
+    if adam_moments:
+        print(f"Moments Adam chargés (step={adam_moments['adam_step']})")
     assert np.isclose(score1, score2) # Vérifie que les scores sont les mêmes
     
     print("\nLe chargement des poids a fonctionné correctement !")

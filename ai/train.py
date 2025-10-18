@@ -40,11 +40,11 @@ EVAL_MAX_SAMPLES = 2000
 
 # Learning rate scheduler (réduit le LR si la loss stagne)
 USE_LR_SCHEDULER = True
-LR_PATIENCE = 2  # Nombre d'epochs sans amélioration avant de réduire le LR
+LR_PATIENCE = 1  # Nombre d'epochs sans amélioration avant de réduire le LR
 LR_FACTOR = 0.5  # Facteur de réduction (multiplier par 0.5)
 
 # Learning rate warmup (critique pour éviter stagnation précoce)
-USE_LR_WARMUP = True
+USE_LR_WARMUP = False
 WARMUP_EPOCHS = 3  # Augmente progressivement le LR pendant les 3 premières epochs
 WARMUP_START_LR = 0.0001  # LR initial très faible
 
@@ -80,37 +80,23 @@ def load_data(filepath: str):
     return fens, evaluations
 
 def main():
-    # 1. Charger les données
-    fens, evaluations = load_data(DATASET_PATH)
+    # 1. Charger les données (dataset complet, on échantillonnera à chaque epoch)
+    all_fens, all_evaluations = load_data(DATASET_PATH)
     
-    print(f"Dataset complet: {len(fens)} positions")
+    print(f"Dataset complet: {len(all_fens)} positions")
     
-    # Échantillonnage intelligent du dataset
-    if USE_SAMPLING and len(fens) > MAX_SAMPLES:
-        print(f"Échantillonnage: {MAX_SAMPLES} positions sur {len(fens)} ({100*MAX_SAMPLES/len(fens):.1f}%)")
-        # Échantillonnage stratifié pour garder la diversité
-        idx = np.random.choice(len(fens), size=MAX_SAMPLES, replace=False)
-        fens = fens[idx]
-        evaluations = evaluations[idx]
-        print(f"✓ Dataset réduit à {len(fens)} positions")
-    
-    # 2. Mélanger le jeu de données de manière globale avant de commencer
-    # Cela garantit que même les exécutions courtes utilisent des données variées.
-    print("Mélange initial du jeu de données...")
-    permutation = np.random.permutation(len(fens))
-    fens = fens[permutation]
-    evaluations = evaluations[permutation]
-    # ---------------------------
     # Mode overfit tiny: réduire à quelques exemples pour vérifier que la loss descend
     if OVERFIT_TINY:
-        n = min(OVERFIT_N, len(fens))
-        fens = fens[:n]
-        evaluations = evaluations[:n]
+        n = min(OVERFIT_N, len(all_fens))
+        all_fens = all_fens[:n]
+        all_evaluations = all_evaluations[:n]
         print(f"Mode overfit tiny activé: {n} exemples")
-    # Définir le batch_size effectif
-    batch_size = min(BATCH_SIZE, len(fens))
+    
     # Biais de sortie initialisé vers la moyenne des labels pour accélérer la convergence
-    eval_mean = float(np.mean(evaluations)) if len(evaluations) > 0 else 0.0
+    eval_mean = float(np.mean(all_evaluations)) if len(all_evaluations) > 0 else 0.0
+    
+    # Définir le batch_size effectif
+    batch_size = BATCH_SIZE
     
     # 3. Initialiser le réseau de neurones
     if RESET_WEIGHTS and os.path.exists(WEIGHTS_FILE):
@@ -120,17 +106,29 @@ def main():
         except Exception as e:
             print(f"Impossible de supprimer {WEIGHTS_FILE}: {e}")
 
+    adam_moments_loaded = None
+    is_new_network = False
+    
     if os.path.exists(WEIGHTS_FILE):
         print(f"Chargement des poids existants depuis {WEIGHTS_FILE} pour continuer l'entraînement...")
-        evaluator = load_evaluator_from_file(WEIGHTS_FILE)
+        evaluator, adam_moments_loaded = load_evaluator_from_file(WEIGHTS_FILE)
+        if adam_moments_loaded:
+            print(f"  ✓ Moments Adam chargés (step={adam_moments_loaded['adam_step']})")
+        else:
+            print(f"  ℹ Pas de moments Adam trouvés (ancien fichier ou premier entraînement)")
     else:
         print("Création d'un nouveau réseau (poids aléatoires)...")
         evaluator = NeuralNetworkEvaluator.create_untrained_network()
-    # Warm-start du biais de sortie pour rapprocher la moyenne des prédictions de celle des cibles
-    try:
-        evaluator.biases3[0, 0] = eval_mean
-    except Exception:
-        pass
+        is_new_network = True
+    
+    # Warm-start du biais de sortie SEULEMENT pour un nouveau réseau
+    if is_new_network:
+        print(f"Warm-start: initialisation du biais de sortie à {eval_mean:.4f}")
+        try:
+            evaluator.biases3[0, 0] = eval_mean
+        except Exception:
+            pass
+    
     # En overfit tiny, augmenter légèrement la sensibilité de la couche de sortie
     if OVERFIT_TINY:
         try:
@@ -141,20 +139,35 @@ def main():
     # Créer une seule instance de l'échiquier pour la réutiliser
     chess_game = Chess()
 
-    # Moments pour Adam (initialisation)
+    # Moments pour Adam (initialisation ou chargement)
     if USE_ADAM:
-        m_w1 = np.zeros_like(evaluator.weights1); v_w1 = np.zeros_like(evaluator.weights1)
-        m_b1 = np.zeros_like(evaluator.biases1);  v_b1 = np.zeros_like(evaluator.biases1)
-        m_w2 = np.zeros_like(evaluator.weights2); v_w2 = np.zeros_like(evaluator.weights2)
-        m_b2 = np.zeros_like(evaluator.biases2);  v_b2 = np.zeros_like(evaluator.biases2)
-        m_w3 = np.zeros_like(evaluator.weights3); v_w3 = np.zeros_like(evaluator.weights3)
-        m_b3 = np.zeros_like(evaluator.biases3);  v_b3 = np.zeros_like(evaluator.biases3)
-        adam_step = 0
+        if adam_moments_loaded:
+            # Charger les moments Adam existants
+            m_w1 = adam_moments_loaded['m_w1']; v_w1 = adam_moments_loaded['v_w1']
+            m_b1 = adam_moments_loaded['m_b1']; v_b1 = adam_moments_loaded['v_b1']
+            m_w2 = adam_moments_loaded['m_w2']; v_w2 = adam_moments_loaded['v_w2']
+            m_b2 = adam_moments_loaded['m_b2']; v_b2 = adam_moments_loaded['v_b2']
+            m_w3 = adam_moments_loaded['m_w3']; v_w3 = adam_moments_loaded['v_w3']
+            m_b3 = adam_moments_loaded['m_b3']; v_b3 = adam_moments_loaded['v_b3']
+            adam_step = int(adam_moments_loaded['adam_step'])
+            print(f"  ✓ Reprise de l'optimisation Adam au step {adam_step}")
+        else:
+            # Créer de nouveaux moments
+            m_w1 = np.zeros_like(evaluator.weights1); v_w1 = np.zeros_like(evaluator.weights1)
+            m_b1 = np.zeros_like(evaluator.biases1);  v_b1 = np.zeros_like(evaluator.biases1)
+            m_w2 = np.zeros_like(evaluator.weights2); v_w2 = np.zeros_like(evaluator.weights2)
+            m_b2 = np.zeros_like(evaluator.biases2);  v_b2 = np.zeros_like(evaluator.biases2)
+            m_w3 = np.zeros_like(evaluator.weights3); v_w3 = np.zeros_like(evaluator.weights3)
+            m_b3 = np.zeros_like(evaluator.biases3);  v_b3 = np.zeros_like(evaluator.biases3)
+            adam_step = 0
+            print(f"  ✓ Initialisation de nouveaux moments Adam")
 
     print("Début de l'entraînement...")
     print(f"\n{'='*70}")
     print(f"Configuration:")
-    print(f"  Dataset: {len(fens):,} positions")
+    print(f"  Dataset complet: {len(all_fens):,} positions")
+    print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING and not OVERFIT_TINY else len(all_fens):,} positions")
+    print(f"  Positions uniques vues: {min(len(all_fens), MAX_SAMPLES * EPOCHS if USE_SAMPLING and not OVERFIT_TINY else len(all_fens)):,} (sur {EPOCHS} epochs)")
     print(f"  Architecture: 768 → 256 → 256 → 1")
     print(f"  Learning rate: {LEARNING_RATE} (Adam: {USE_ADAM})")
     print(f"  LR Warmup: {USE_LR_WARMUP} ({WARMUP_START_LR if USE_LR_WARMUP else 'N/A'} → {LEARNING_RATE} over {WARMUP_EPOCHS if USE_LR_WARMUP else 0} epochs)")
@@ -174,6 +187,20 @@ def main():
     epochs_without_improvement = 0
     
     for epoch in range(EPOCHS):
+        # Échantillonnage à chaque epoch (sauf en overfit tiny)
+        if OVERFIT_TINY:
+            fens = all_fens
+            evaluations = all_evaluations
+        elif USE_SAMPLING and len(all_fens) > MAX_SAMPLES:
+            # Nouvel échantillon aléatoire à chaque epoch !
+            print(f"\n[Epoch {epoch+1}] Échantillonnage: {MAX_SAMPLES:,} positions sur {len(all_fens):,}")
+            idx = np.random.choice(len(all_fens), size=MAX_SAMPLES, replace=False)
+            fens = all_fens[idx]
+            evaluations = all_evaluations[idx]
+        else:
+            fens = all_fens
+            evaluations = all_evaluations
+        
         # LR Warmup: augmente progressivement le LR pendant les premières epochs
         if USE_LR_WARMUP and epoch < WARMUP_EPOCHS and not OVERFIT_TINY:
             # Interpolation linéaire du LR
@@ -349,13 +376,13 @@ def main():
 
         # Évaluation fin d'époque (échantillon si dataset volumineux et pas en overfit tiny)
         try:
-            if not OVERFIT_TINY and EVAL_MAX_SAMPLES is not None and len(fens) > EVAL_MAX_SAMPLES:
-                idx = np.random.choice(len(fens), size=EVAL_MAX_SAMPLES, replace=False)
-                eval_fens = fens[idx]
-                eval_targets = evaluations[idx]
+            if not OVERFIT_TINY and EVAL_MAX_SAMPLES is not None and len(all_fens) > EVAL_MAX_SAMPLES:
+                idx = np.random.choice(len(all_fens), size=EVAL_MAX_SAMPLES, replace=False)
+                eval_fens = all_fens[idx]
+                eval_targets = all_evaluations[idx]
             else:
-                eval_fens = fens
-                eval_targets = evaluations
+                eval_fens = all_fens
+                eval_targets = all_evaluations
 
             preds_all = []
             targets_all = []
@@ -434,12 +461,37 @@ def main():
             print(f"[EPOCH {epoch+1}] eval error: {e}")
 
         print(f"\nFin de l'époque {epoch + 1}. Sauvegarde des poids intermédiaires...")
-        save_weights(evaluator, WEIGHTS_FILE)
+        # Sauvegarder les poids avec les moments Adam
+        if USE_ADAM:
+            adam_dict = {
+                'm_w1': m_w1, 'v_w1': v_w1,
+                'm_b1': m_b1, 'v_b1': v_b1,
+                'm_w2': m_w2, 'v_w2': v_w2,
+                'm_b2': m_b2, 'v_b2': v_b2,
+                'm_w3': m_w3, 'v_w3': v_w3,
+                'm_b3': m_b3, 'v_b3': v_b3,
+                'adam_step': np.array(adam_step)
+            }
+            save_weights(evaluator, WEIGHTS_FILE, adam_moments=adam_dict)
+        else:
+            save_weights(evaluator, WEIGHTS_FILE)
 
     print("Entraînement terminé.")
     
     # 5. Sauvegarder les poids entraînés
-    save_weights(evaluator, WEIGHTS_FILE)
+    if USE_ADAM:
+        adam_dict = {
+            'm_w1': m_w1, 'v_w1': v_w1,
+            'm_b1': m_b1, 'v_b1': v_b1,
+            'm_w2': m_w2, 'v_w2': v_w2,
+            'm_b2': m_b2, 'v_b2': v_b2,
+            'm_w3': m_w3, 'v_w3': v_w3,
+            'm_b3': m_b3, 'v_b3': v_b3,
+            'adam_step': np.array(adam_step)
+        }
+        save_weights(evaluator, WEIGHTS_FILE, adam_moments=adam_dict)
+    else:
+        save_weights(evaluator, WEIGHTS_FILE)
 
 if __name__ == "__main__":
     main()
