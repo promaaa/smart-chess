@@ -128,3 +128,9 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# ML weights and artifacts
+*.npz
+ai/chess_nn_weights.npz
+*.pstats
+*.prof
