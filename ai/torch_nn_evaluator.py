@@ -12,11 +12,13 @@ class TorchNNEvaluator(nn.Module):
     - fournit des helpers pour checkpoint/restore PyTorch (optimizer.state_dict)
     """
 
-    def __init__(self, input_size=768, hidden_size=256, output_size=1):
+    def __init__(self, input_size=768, hidden_size=512, output_size=1):
         super().__init__()
         self.l1 = nn.Linear(input_size, hidden_size)
         self.l2 = nn.Linear(hidden_size, hidden_size)
         self.l3 = nn.Linear(hidden_size, output_size)
+        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout2 = nn.Dropout(p=0.2)
 
         self.piece_to_index = {
             'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
@@ -26,7 +28,9 @@ class TorchNNEvaluator(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = torch.relu(self.l1(x))
+        x = self.dropout1(x)
         x = torch.relu(self.l2(x))
+        x = self.dropout2(x)
         return self.l3(x)
 
     def encode_board(self, chess_instance: Chess, device='cpu') -> torch.Tensor:
