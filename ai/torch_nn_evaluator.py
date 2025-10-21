@@ -7,18 +7,20 @@ from Chess import Chess
 class TorchNNEvaluator(nn.Module):
     """PyTorch implementation équivalente du `NeuralNetworkEvaluator` en NumPy.
 
-    - architecture: Linear(input -> hidden) -> ReLU -> Linear(hidden -> hidden) -> ReLU -> Linear(hidden -> out)
+    - architecture: Linear(input -> hidden) -> LeakyReLU -> Dropout -> Linear(hidden -> hidden) -> LeakyReLU -> Dropout -> Linear(hidden -> out)
     - fournit des helpers pour charger/sauver au format .npz (compatibilité avec l'ancien code NumPy)
     - fournit des helpers pour checkpoint/restore PyTorch (optimizer.state_dict)
+    - Support GPU automatique
     """
 
-    def __init__(self, input_size=768, hidden_size=512, output_size=1):
+    def __init__(self, input_size=768, hidden_size=256, output_size=1, dropout=0.3, leaky_alpha=0.01):
         super().__init__()
         self.l1 = nn.Linear(input_size, hidden_size)
         self.l2 = nn.Linear(hidden_size, hidden_size)
         self.l3 = nn.Linear(hidden_size, output_size)
-        self.dropout1 = nn.Dropout(p=0.2)
-        self.dropout2 = nn.Dropout(p=0.2)
+        self.dropout1 = nn.Dropout(p=dropout)
+        self.dropout2 = nn.Dropout(p=dropout)
+        self.leaky_relu = nn.LeakyReLU(negative_slope=leaky_alpha)
 
         self.piece_to_index = {
             'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
@@ -27,9 +29,9 @@ class TorchNNEvaluator(nn.Module):
         self.input_size = input_size
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.l1(x))
+        x = self.leaky_relu(self.l1(x))
         x = self.dropout1(x)
-        x = torch.relu(self.l2(x))
+        x = self.leaky_relu(self.l2(x))
         x = self.dropout2(x)
         return self.l3(x)
 
