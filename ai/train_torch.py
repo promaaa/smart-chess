@@ -15,7 +15,7 @@ from Chess import Chess
 from torch_nn_evaluator import TorchNNEvaluator, save_weights_npz, load_from_npz, torch_save_checkpoint, torch_load_checkpoint
 
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
-DATASET_PATH = "chessData.csv"  # Adapté pour Colab (fichier à la racine)
+DATASET_PATH = "C:\\Users\\gauti\\OneDrive\\Documents\\UE commande\\chessData.csv"  # Adapté pour Colab (fichier à la racine)
 WEIGHTS_FILE = "chess_nn_weights.npz"
 CHECKPOINT_FILE = "chess_model_checkpoint.pt"
 
