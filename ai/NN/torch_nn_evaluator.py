@@ -148,13 +148,125 @@ def torch_save_checkpoint(path: str, model: TorchNNEvaluator, optimizer=None, st
 
 def torch_load_checkpoint(path: str, model: TorchNNEvaluator = None, optimizer=None, device='cpu'):
     ckpt = torch.load(path, map_location=device)
-    if model is not None:
+    optim_state = ckpt.get('optim')
+    step = ckpt.get('step')
+
+    if model is None:
+        # nothing to load into
+        return None, optim_state, step
+
+    # Try the normal strict load first
+    try:
         model.load_state_dict(ckpt['model'])
         model.to(device)
-    optim_state = ckpt.get('optim')
+        if optimizer is not None and optim_state is not None:
+            optimizer.load_state_dict(optim_state)
+        return model, optim_state, step
+    except RuntimeError as e:
+        # Likely a shape mismatch. We'll attempt a best-effort copy of matching
+        # parameter slices from the checkpoint into the current model.
+        msg = str(e)
+        print("⚠️ Warning while loading checkpoint with strict=True:", msg)
+        print("Attempting flexible parameter copy (will copy matching slices where possible)...")
+
+    ckpt_sd = ckpt['model']
+    model_sd = model.state_dict()
+    flexible_copy_performed = False
+
+    def _copy_tensor(dst: torch.Tensor, src: torch.Tensor):
+        """Copy as much of src into dst as possible by slicing the leading dims.
+
+        This works for linear layers where weight tensors are (out, in) and bias
+        are 1-D. We copy the overlapping block along each dimension.
+        """
+        if dst.shape == src.shape:
+            dst.copy_(src)
+            return
+        # Determine overlapping slice for each dim
+        slices = tuple(slice(0, min(s, d)) for s, d in zip(src.shape, dst.shape))
+        try:
+            dst[slices].copy_(src[slices])
+        except Exception as ex:
+            # fallback: try to flatten-copy up to min elements
+            n = min(dst.numel(), src.numel())
+            dst.view(-1)[:n].copy_(src.view(-1)[:n])
+
+    # Iterate and copy compatible tensors
+    for k, dst_tensor in model_sd.items():
+        if k in ckpt_sd:
+            src_tensor = ckpt_sd[k]
+            # Only attempt to copy tensors (skip non-tensor entries)
+            if not isinstance(src_tensor, torch.Tensor):
+                try:
+                    src_tensor = torch.tensor(src_tensor)
+                except Exception:
+                    continue
+            # Ensure same dtype where possible
+            if src_tensor.dtype != dst_tensor.dtype:
+                try:
+                    src_tensor = src_tensor.to(dst_tensor.dtype)
+                except Exception:
+                    pass
+            # Copy overlapping region
+            try:
+                # detect if shapes differ; mark that we performed a flexible copy
+                if tuple(src_tensor.shape) != tuple(dst_tensor.shape):
+                    flexible_copy_performed = True
+                _copy_tensor(dst_tensor, src_tensor)
+                print(f"  Copied params for '{k}' (src {tuple(src_tensor.shape)} -> dst {tuple(dst_tensor.shape)})")
+            except Exception as ex:
+                print(f"  Skipped '{k}' due to copy error: {ex}")
+        else:
+            print(f"  Key '{k}' not found in checkpoint; using model init for this param.")
+
+    # Load the modified state dict into model (non-strict because some keys might be missing)
+    try:
+        model.load_state_dict(model_sd)
+        model.to(device)
+    except Exception as ex:
+        print("Error loading adapted state_dict into model:", ex)
+
+    # Try to restore optimizer state if provided. Restoring optimizer buffers when
+    # the model architecture (and thus parameter shapes) changed can lead to
+    # shape mismatches inside optimizer tensors and runtime errors during step().
+    # Safer approach: only restore optimizer state when the checkpoint parameter
+    # tensor shapes exactly match the current model's tensors. Otherwise skip
+    # restoring optimizer state and start with a freshly initialized optimizer.
     if optimizer is not None and optim_state is not None:
-        optimizer.load_state_dict(optim_state)
-    step = ckpt.get('step')
+        try:
+            # If we performed any flexible parameter copy above (slicing/expanding),
+            # that means the checkpoint and model shapes differed — in that case
+            # it's unsafe to restore optimizer buffers. Skip optimizer restore.
+            if flexible_copy_performed:
+                print("⚠️ Flexible parameter copy was performed (checkpoint/model shape mismatch); skipping optimizer restore to avoid buffer shape errors.")
+            else:
+                # Quick compatibility check: ensure all parameter tensors that exist in
+                # both checkpoint and current model have identical shapes.
+                ckpt_model_sd = ckpt.get('model', {})
+                shape_mismatch = False
+                for k, dst_tensor in model_sd.items():
+                    if k in ckpt_model_sd:
+                        src_tensor = ckpt_model_sd[k]
+                        # ensure tensor-like
+                        if not isinstance(src_tensor, torch.Tensor):
+                            try:
+                                src_tensor = torch.tensor(src_tensor)
+                            except Exception:
+                                continue
+                        if tuple(src_tensor.shape) != tuple(dst_tensor.shape):
+                            shape_mismatch = True
+                            break
+
+                if shape_mismatch:
+                    print("⚠️ Checkpoint parameter shapes differ from the current model; skipping optimizer restore to avoid buffer shape errors.")
+                else:
+                    # shapes match exactly: safe to restore optimizer state
+                    optimizer.load_state_dict(optim_state)
+                    print("Optimizer state restored")
+        except Exception as ex:
+            # Any unexpected error: do not crash — skip optimizer restore
+            print("⚠️ Unexpected error while restoring optimizer state; skipping optimizer restore:", ex)
+
     return model, optim_state, step
 
 

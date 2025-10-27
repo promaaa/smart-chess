@@ -1,3 +1,4 @@
+import sys
 """
 Script d'entraînement PyTorch optimisé pour GPU
 Compatible avec Google Colab et machines locales avec GPU
@@ -162,7 +163,7 @@ def main():
     
     if os.path.exists(CHECKPOINT_FILE):
         print(f"📥 Chargement du checkpoint PyTorch: {CHECKPOINT_FILE}")
-        model = TorchNNEvaluator(hidden_size=HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
+        model = TorchNNEvaluator(hidden_size=sys.modules[__name__].HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
         model, _, start_step = torch_load_checkpoint(CHECKPOINT_FILE, model, optimizer, device=DEVICE)
         print(f"✅ Checkpoint chargé (step {start_step})")
@@ -248,6 +249,20 @@ def main():
         
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{EPOCHS}")
         for batch_idx, (inputs, targets) in enumerate(progress_bar):
+            
+            # Check for NaNs/Infs before moving to device
+            if torch.isnan(inputs).any() or torch.isinf(inputs).any():
+                print(f"⚠️ WARNING: NaN or Inf found in inputs for batch {batch_idx}, epoch {epoch+1}. Skipping batch.")
+                # Optional: Add more info about the problematic data
+                # print("Problematic inputs:", inputs[torch.isnan(inputs) | torch.isinf(inputs)])
+                continue # Skip this batch
+
+            if torch.isnan(targets).any() or torch.isinf(targets).any():
+                print(f"⚠️ WARNING: NaN or Inf found in targets for batch {batch_idx}, epoch {epoch+1}. Skipping batch.")
+                # Optional: Add more info about the problematic data
+                # print("Problematic targets:", targets[torch.isnan(targets) | torch.isinf(targets)])
+                continue # Skip this batch
+
             inputs = inputs.to(DEVICE)
             targets = targets.to(DEVICE)
             
