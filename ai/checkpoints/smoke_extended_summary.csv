@@ -1,0 +1,4 @@
+run,exp,seed,rmse,mae,corr,ckpt
+baseline_r1_s42,baseline,42,0.7096270322799683,0.2862894833087921,0.5116014941124654,/content/drive/MyDrive/smart_chess_drive/smart-chess/ai/checkpoints/smoke_ext_baseline_r1_s42.pt
+bigger_r1_s42,bigger,42,0.6877122521400452,0.2863157093524933,0.5567073798223588,/content/drive/MyDrive/smart_chess_drive/smart-chess/ai/checkpoints/smoke_ext_bigger_r1_s42.pt
+smaller_lr_r1_s42,smaller_lr,42,0.6987618803977966,0.2826031446456909,0.5368451994512534,/content/drive/MyDrive/smart_chess_drive/smart-chess/ai/checkpoints/smoke_ext_smaller_lr_r1_s42.pt
