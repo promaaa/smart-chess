@@ -12,7 +12,7 @@ from tqdm import tqdm
 import os
 
 from Chess import Chess
-from torch_nn_evaluator import TorchNNEvaluator, save_weights_npz, load_from_npz, torch_save_checkpoint, torch_load_checkpoint
+from ai.NN.torch_nn_evaluator import TorchNNEvaluator, save_weights_npz, load_from_npz, torch_save_checkpoint, torch_load_checkpoint
 
 # --- CONFIGURATION DE L'ENTRAÎNEMENT ---
 DATASET_PATH = "C:\\Users\\gauti\\OneDrive\\Documents\\UE commande\\chessData.csv"  # Adapté pour Colab (fichier à la racine)
@@ -191,7 +191,7 @@ def main():
     if USE_LR_SCHEDULER:
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=LR_FACTOR, 
-            patience=LR_PATIENCE, verbose=True
+            patience=LR_PATIENCE
         )
     
     print(f"\n{'='*70}")
