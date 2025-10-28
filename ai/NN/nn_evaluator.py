@@ -119,6 +119,13 @@ def load_evaluator_from_file(filename: str):
                  'm_b2', 'v_b2', 'm_w3', 'v_w3', 'm_b3', 'v_b3', 'adam_step']
     if all(key in data for key in adam_keys):
         adam_moments = {key: data[key] for key in adam_keys}
+
+    # Charger metadata optionnelle si présente (learning_rate, best_rmse)
+    for meta_key in ('learning_rate', 'best_rmse'):
+        if meta_key in data:
+            if adam_moments is None:
+                adam_moments = {}
+            adam_moments[meta_key] = float(data[meta_key])
     
     return evaluator, adam_moments
 

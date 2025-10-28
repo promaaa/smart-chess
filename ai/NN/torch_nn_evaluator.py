@@ -83,6 +83,8 @@ def save_weights_npz(model: TorchNNEvaluator, filename: str, adam_moments: dict 
         # ensure numpy arrays
         for k, v in dict(adam_moments).items():
             save_dict[k] = np.array(v)
+    # If a metadata dict is supplied inside adam_moments (e.g. learning_rate, best_rmse),
+    # it will be saved along the weights so non-PyTorch training scripts can pick it up.
 
     np.savez(filename, **save_dict)
     if adam_moments is not None:
@@ -132,16 +134,30 @@ def load_from_npz(filename: str, device='cpu'):
             else:
                 adam_moments[k] = torch.from_numpy(np.array(val)).to(torch.float32)
 
+    # Recover optional metadata (learning_rate, best_rmse) if present in the npz
+    for meta_key in ('learning_rate', 'best_rmse'):
+        if meta_key in data:
+            if adam_moments is None:
+                adam_moments = {}
+            adam_moments[meta_key] = float(data[meta_key])
+
     model.to(device)
     return model, adam_moments
 
 
-def torch_save_checkpoint(path: str, model: TorchNNEvaluator, optimizer=None, step: int = None):
+def torch_save_checkpoint(path: str, model: TorchNNEvaluator, optimizer=None, step: int = None, best_rmse: float = None):
+    """Save a checkpoint. Optionally include optimizer state, step, and best RMSE.
+
+    Including `best_rmse` allows training runs to resume with the historical
+    best validation metric instead of resetting it to +inf.
+    """
     ckpt = {'model': model.state_dict()}
     if optimizer is not None:
         ckpt['optim'] = optimizer.state_dict()
     if step is not None:
         ckpt['step'] = int(step)
+    if best_rmse is not None:
+        ckpt['best_rmse'] = float(best_rmse)
     torch.save(ckpt, path)
     print(f"Checkpoint PyTorch sauvegardé dans {path}")
 

@@ -178,6 +178,25 @@ def main():
     print(f"{'='*70}\n")
     # Learning rate effectif (plus grand en overfit tiny pour accélérer la convergence)
     lr = LEARNING_RATE * (10.0 if OVERFIT_TINY else 1.0)
+    # If we loaded existing weights and they carried LR metadata, reuse it and disable warmup
+    effective_use_lr_warmup = USE_LR_WARMUP
+    if 'adam_moments_loaded' in locals() and adam_moments_loaded is not None:
+        # metadata keys may be present inside adam_moments_loaded
+        if 'learning_rate' in adam_moments_loaded:
+            try:
+                lr = float(adam_moments_loaded['learning_rate'])
+                effective_use_lr_warmup = False
+                print(f"ℹ️ Reprise détectée: utilisation du learning rate sauvegardé {lr:.6f} et désactivation du warmup.")
+            except Exception:
+                pass
+        if 'best_rmse' in adam_moments_loaded:
+            try:
+                best_rmse = float(adam_moments_loaded['best_rmse'])
+                print(f"ℹ️ Reprise détectée: best_rmse restauré = {best_rmse:.4f}")
+            except Exception:
+                pass
+    else:
+        effective_use_lr_warmup = USE_LR_WARMUP
     # Accélérer la montée en amplitude des prédictions en overfit
     out_lr = lr * 20.0 if OVERFIT_TINY else lr
     # 3. Boucle d'entraînement principale
@@ -202,13 +221,23 @@ def main():
             evaluations = all_evaluations
         
         # LR Warmup: augmente progressivement le LR pendant les premières epochs
-        if USE_LR_WARMUP and epoch < WARMUP_EPOCHS and not OVERFIT_TINY:
+        if effective_use_lr_warmup and epoch < WARMUP_EPOCHS and not OVERFIT_TINY:
             # Interpolation linéaire du LR
             warmup_progress = (epoch + 1) / WARMUP_EPOCHS
             lr = WARMUP_START_LR + (LEARNING_RATE - WARMUP_START_LR) * warmup_progress
             out_lr = lr
             print(f"🔥 Warmup epoch {epoch+1}/{WARMUP_EPOCHS}: LR = {lr:.6f}")
-        
+
+        # Afficher le LR courant utilisé pour cette époque (après warmup si applicable)
+        try:
+            if out_lr != lr:
+                # Cas improbable mais clair: afficher les deux (base et output)
+                print(f"➡️ Learning rate courant: base={lr:.6f}, output_layer={out_lr:.6f}")
+            else:
+                print(f"➡️ Learning rate courant: {lr:.6f}")
+        except Exception:
+            print(f"➡️ Learning rate (approx): {LEARNING_RATE}")
+
         total_loss = 0
         
         # Mélanger les données (désactivé en overfit tiny pour stabilité et reproductibilité)
@@ -444,7 +473,7 @@ def main():
             # Learning rate scheduler
             if USE_LR_SCHEDULER and not OVERFIT_TINY:
                 # Ne commence le scheduler qu'après le warmup
-                if not USE_LR_WARMUP or epoch >= WARMUP_EPOCHS:
+                if not effective_use_lr_warmup or epoch >= WARMUP_EPOCHS:
                     if rmse_all < best_rmse - 0.01:  # Amélioration significative (>0.01)
                         best_rmse = rmse_all
                         epochs_without_improvement = 0
@@ -470,10 +499,13 @@ def main():
                 'm_b2': m_b2, 'v_b2': v_b2,
                 'm_w3': m_w3, 'v_w3': v_w3,
                 'm_b3': m_b3, 'v_b3': v_b3,
-                'adam_step': np.array(adam_step)
+                'adam_step': np.array(adam_step),
+                'learning_rate': float(lr),
+                'best_rmse': float(best_rmse)
             }
             save_weights(evaluator, WEIGHTS_FILE, adam_moments=adam_dict)
         else:
+            # Save metadata even when not using Adam
             save_weights(evaluator, WEIGHTS_FILE)
 
     print("Entraînement terminé.")
@@ -487,7 +519,9 @@ def main():
             'm_b2': m_b2, 'v_b2': v_b2,
             'm_w3': m_w3, 'v_w3': v_w3,
             'm_b3': m_b3, 'v_b3': v_b3,
-            'adam_step': np.array(adam_step)
+            'adam_step': np.array(adam_step),
+            'learning_rate': float(lr),
+            'best_rmse': float(best_rmse)
         }
         save_weights(evaluator, WEIGHTS_FILE, adam_moments=adam_dict)
     else:

@@ -166,13 +166,70 @@ def main():
         model = TorchNNEvaluator(hidden_size=sys.modules[__name__].HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
         model, _, start_step = torch_load_checkpoint(CHECKPOINT_FILE, model, optimizer, device=DEVICE)
-        print(f"✅ Checkpoint chargé (step {start_step})")
+        # Also read checkpoint metadata (best_rmse) if present so we don't reset it
+        try:
+            ckpt_raw = torch.load(CHECKPOINT_FILE, map_location=DEVICE)
+            # Determine whether the checkpoint actually contains model weights.
+            # We base the validity of `best_rmse` on that: if the checkpoint has no
+            # 'model' entry (or it's empty), the stored best_rmse is considered
+            # stale and will be removed.
+            has_model_weights = 'model' in ckpt_raw and bool(ckpt_raw.get('model'))
+            if 'best_rmse' in ckpt_raw and not has_model_weights:
+                print(f"⚠️  Checkpoint contient 'best_rmse' mais ne contient pas de poids -> suppression du meilleur RMSE pour éviter métrique obsolète.")
+                ckpt_copy = dict(ckpt_raw)
+                ckpt_copy.pop('best_rmse', None)
+                try:
+                    torch.save(ckpt_copy, CHECKPOINT_FILE)
+                    print(f"✅ best_rmse supprimé du checkpoint {CHECKPOINT_FILE}")
+                except Exception as ex:
+                    print(f"⚠️ Impossible de réécrire le checkpoint pour supprimer best_rmse: {ex}")
+                best_rmse = float('inf')
+            else:
+                best_rmse = float(ckpt_raw.get('best_rmse', float('inf')))
+        except Exception:
+            best_rmse = float('inf')
+
+        print(f"✅ Checkpoint chargé (step {start_step}), best_rmse={best_rmse}")
     elif os.path.exists(WEIGHTS_FILE):
         print(f"📥 Chargement des poids NumPy: {WEIGHTS_FILE}")
-        model, adam_moments = load_from_npz(WEIGHTS_FILE, device=DEVICE)
+        model, adam_moments = load_from_npz(WEIGHTS_FILE, device=str(DEVICE))
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-        # TODO: Restaurer les moments Adam si présents
-        print(f"✅ Poids chargés depuis NumPy")
+        # If the saved .npz contains metadata (learning_rate / best_rmse), apply it
+        if adam_moments is not None:
+            # learning_rate saved as float in our save convention
+            if 'learning_rate' in adam_moments:
+                try:
+                    lr_saved = float(adam_moments['learning_rate'])
+                    for pg in optimizer.param_groups:
+                        pg['lr'] = lr_saved
+                    print(f"ℹ️ LR restauré depuis {WEIGHTS_FILE}: {lr_saved:.6f}")
+                except Exception:
+                    pass
+            if 'best_rmse' in adam_moments:
+                try:
+                    best_rmse = float(adam_moments['best_rmse'])
+                    print(f"ℹ️ best_rmse restauré depuis {WEIGHTS_FILE}: {best_rmse:.4f}")
+                except Exception:
+                    best_rmse = float('inf')
+        # TODO: Restaurer les moments Adam si présents (dépend de correspondance de forme)
+        # If we have a checkpoint metadata file with a best_rmse and the npz exists,
+        # allow loading that best_rmse so training can resume with the historical metric.
+        try:
+            if os.path.exists(CHECKPOINT_FILE):
+                ckpt_raw = torch.load(CHECKPOINT_FILE, map_location=DEVICE)
+                # Only honor best_rmse from the checkpoint if the checkpoint
+                # actually contains model weights.
+                has_model_weights = 'model' in ckpt_raw and bool(ckpt_raw.get('model'))
+                if has_model_weights:
+                    best_rmse = float(ckpt_raw.get('best_rmse', float('inf')))
+                else:
+                    best_rmse = float('inf')
+            else:
+                best_rmse = float('inf')
+        except Exception:
+            best_rmse = float('inf')
+
+        print(f"✅ Poids chargés depuis NumPy (best_rmse initial={best_rmse})")
     else:
         print("🆕 Création d'un nouveau réseau...")
         model = TorchNNEvaluator(hidden_size=HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
@@ -209,10 +266,20 @@ def main():
     print(f"  Epochs: {EPOCHS}")
     print(f"  Device: {DEVICE}")
     print(f"{'='*70}\n")
-    
     # 4. Boucle d'entraînement
-    best_rmse = float('inf')
-    
+    # If a checkpoint or weights file existed at startup we treat this run as
+    # a resume. In that case we disable the LR warmup and reuse the optimizer
+    # LR (if restored from checkpoint) or the metadata saved in the .npz.
+    resumed = False
+    effective_use_lr_warmup = USE_LR_WARMUP
+    if os.path.exists(CHECKPOINT_FILE) or os.path.exists(WEIGHTS_FILE):
+        resumed = True
+        effective_use_lr_warmup = False
+        print("ℹ️ Reprise détectée: désactivation du LR warmup pour utiliser le LR sauvegardé/précédent.")
+
+    # best_rmse may have been set during checkpoint/weights loading above; default to +inf
+    best_rmse = locals().get('best_rmse', float('inf'))
+
     for epoch in range(EPOCHS):
         # Échantillonnage à chaque epoch
         if USE_SAMPLING and len(all_fens) > MAX_SAMPLES:
@@ -225,12 +292,23 @@ def main():
             evaluations = all_evaluations
         
         # LR Warmup
-        if USE_LR_WARMUP and epoch < WARMUP_EPOCHS:
+        if effective_use_lr_warmup and epoch < WARMUP_EPOCHS:
             warmup_progress = (epoch + 1) / WARMUP_EPOCHS
             lr = WARMUP_START_LR + (LEARNING_RATE - WARMUP_START_LR) * warmup_progress
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
             print(f"🔥 Warmup epoch {epoch+1}/{WARMUP_EPOCHS}: LR = {lr:.6f}")
+
+        # Afficher le LR courant utilisé pour cette époque (après warmup si applicable)
+        try:
+            lrs = [pg.get('lr', None) for pg in optimizer.param_groups]
+            if len(lrs) == 1:
+                print(f"➡️ Learning rate courant: {lrs[0]:.6f}")
+            else:
+                print("➡️ Learning rates courants: " + ", ".join(f"{x:.6f}" for x in lrs))
+        except Exception:
+            # Défensif: si optimizer absent ou structure inattendue, afficher l'hyperparamètre initial
+            print(f"➡️ Learning rate (approx): {LEARNING_RATE}")
         
         # Créer le dataset et dataloader
         train_dataset = ChessDataset(fens, evaluations)
@@ -340,23 +418,34 @@ def main():
         print(f"{'='*70}\n")
         
         # LR Scheduler
-        if USE_LR_SCHEDULER and (not USE_LR_WARMUP or epoch >= WARMUP_EPOCHS):
+        if USE_LR_SCHEDULER and (not effective_use_lr_warmup or epoch >= WARMUP_EPOCHS):
             scheduler.step(rmse)
         
         # Sauvegarder le meilleur modèle
         if rmse < best_rmse:
             best_rmse = rmse
             print(f"💾 Nouveau meilleur RMSE: {best_rmse:.4f} - Sauvegarde...")
-            torch_save_checkpoint(CHECKPOINT_FILE, model, optimizer, epoch)
-            save_weights_npz(model, WEIGHTS_FILE)
+            torch_save_checkpoint(CHECKPOINT_FILE, model, optimizer, epoch, best_rmse=best_rmse)
+            # Save weights + metadata (learning_rate and best_rmse) so next runs can resume
+            try:
+                current_lr = float(optimizer.param_groups[0].get('lr', LEARNING_RATE))
+            except Exception:
+                current_lr = LEARNING_RATE
+            meta = {'learning_rate': current_lr, 'best_rmse': float(best_rmse)}
+            save_weights_npz(model, WEIGHTS_FILE, adam_moments=meta)
     
     print("\n🎉 Entraînement terminé!")
     print(f"📊 Meilleur RMSE: {best_rmse:.4f}")
     
     # Sauvegarde finale
     print(f"\n💾 Sauvegarde finale...")
-    torch_save_checkpoint(CHECKPOINT_FILE, model, optimizer, EPOCHS)
-    save_weights_npz(model, WEIGHTS_FILE)
+    torch_save_checkpoint(CHECKPOINT_FILE, model, optimizer, EPOCHS, best_rmse=best_rmse)
+    try:
+        current_lr = float(optimizer.param_groups[0].get('lr', LEARNING_RATE))
+    except Exception:
+        current_lr = LEARNING_RATE
+    meta = {'learning_rate': current_lr, 'best_rmse': float(best_rmse)}
+    save_weights_npz(model, WEIGHTS_FILE, adam_moments=meta)
     print(f"✅ Modèle sauvegardé dans {CHECKPOINT_FILE} et {WEIGHTS_FILE}")
 
 
