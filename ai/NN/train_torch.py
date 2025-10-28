@@ -26,7 +26,7 @@ DROPOUT = 0.3
 LEAKY_ALPHA = 0.01
 
 # Hyperparamètres
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 WEIGHT_DECAY = 1e-4  # L2 regularization (AdamW)
 EPOCHS = 20
 BATCH_SIZE = 128  # Plus grand pour GPU
@@ -40,7 +40,7 @@ DEBUG_STATS = True
 
 # LR Scheduler
 USE_LR_SCHEDULER = True
-LR_PATIENCE = 2
+LR_PATIENCE = 4
 LR_FACTOR = 0.5
 
 # LR Warmup
@@ -241,6 +241,54 @@ def main():
             model.l3.bias[0] = eval_mean
     
     model.to(DEVICE)
+    # --- Interactive LR selection at start ---
+    # If a previous run saved an optimizer LR in the checkpoint or a metadata key
+    # in the .npz, show it and allow the user to enter a LR to start with.
+    recorded_lr = None
+    try:
+        if os.path.exists(CHECKPOINT_FILE):
+            ck = torch.load(CHECKPOINT_FILE, map_location='cpu')
+            optim_raw = ck.get('optim')
+            if optim_raw and isinstance(optim_raw, dict):
+                pgs = optim_raw.get('param_groups')
+                if pgs and len(pgs) > 0:
+                    recorded_lr = float(pgs[0].get('lr', recorded_lr))
+    except Exception:
+        recorded_lr = recorded_lr
+
+    # fallback to .npz metadata if present
+    try:
+        if recorded_lr is None and os.path.exists(WEIGHTS_FILE):
+            data = np.load(WEIGHTS_FILE)
+            if 'learning_rate' in data:
+                recorded_lr = float(data['learning_rate'])
+    except Exception:
+        recorded_lr = recorded_lr
+
+    default_lr = recorded_lr if recorded_lr is not None else LEARNING_RATE
+    if recorded_lr is not None:
+        print(f"ℹ️ Learning rate enregistré détecté: {recorded_lr:.6f}")
+    else:
+        print(f"ℹ️ Aucun learning rate enregistré trouvé; valeur par défaut: {default_lr:.6f}")
+
+    try:
+        # interactive prompt: user can press Enter to accept default
+        ui = input(f"Saisir le learning rate de départ [{default_lr:.6f}]: ").strip()
+        if ui != "":
+            chosen_lr = float(ui)
+        else:
+            chosen_lr = float(default_lr)
+    except Exception:
+        print("⚠️ Entrée invalide — utilisation de la valeur par défaut")
+        chosen_lr = float(default_lr)
+
+    # Apply chosen LR to optimizer param groups
+    try:
+        for pg in optimizer.param_groups:
+            pg['lr'] = chosen_lr
+        print(f"➡️ Learning rate initial utilisé pour l'entraînement: {chosen_lr:.6f}")
+    except Exception:
+        print("⚠️ Impossible d'appliquer le learning rate à l'optimizer; vérifiez l'état de l'optimizer")
     
     # 3. Configuration de l'entraînement
     criterion = nn.MSELoss()
