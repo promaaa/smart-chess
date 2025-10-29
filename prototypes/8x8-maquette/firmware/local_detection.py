@@ -1,143 +1,312 @@
+#!/usr/bin/env python3
+"""
+local_detection.py - Détection locale des pièces d'échecs et allumage des LEDs
+
+Ce programme surveille en continu les 64 reed sensors de l'échiquier et allume
+les 4 LEDs autour de chaque case où un aimant est détecté.
+
+Note: Une diagonale de LEDs ne fonctionne pas (B9), donc certaines cases
+n'auront que 2 ou 3 LEDs allumées au lieu de 4.
+"""
+
 import time
 import board
 import busio
+from smbus2 import SMBus
 from adafruit_tca9548a import TCA9548A
 from adafruit_is31fl3731.matrix import Matrix
-from adafruit_mcp230xx.mcp23017 import MCP23017
 
-# --- Mappings configurables ---
-# Reed sensor mapping: dict de (mcp_channel, pin) -> (row, col)
-# mcp_channel: 0 à 3 (canaux du multiplexeur pour les MCP)
-# pin: 0 à 15 (0-7 pour GPIOA, 8-15 pour GPIOB)
-# row, col: 0 à 7 pour l'échiquier 8x8
-# Modifiez ce dict pour remapper les reed sensors à leurs positions réelles.
-reed_to_pos = {}
-for ch in range(4):
-    row_base = ch * 2
-    for col in range(8):
-        reed_to_pos[(ch, col)] = (row_base, col)  # GPIOA: pins 0-7 -> row row_base
-        reed_to_pos[(ch, col + 8)] = (
-            row_base + 1,
-            col,
-        )  # GPIOB: pins 8-15 -> row row_base+1
+# --- Constantes ---
+TCA_I2C_ADDR = 0x70
+MCP_BASE_ADDR = 0x20
+I2C_BUSNUM = 1
+LED_TCA_CHANNEL = 4  # Canal TCA pour la matrice LED
+LED_BRIGHTNESS = 200  # Intensité des LEDs (0-255)
 
-# Position to LED mapping: dict de (row, col) -> (led_x, led_y)
-# row, col: 0 à 7 pour l'échiquier
-# led_x, led_y: 0 à 8 pour la matrice LED 9x9 (ajustez si nécessaire, par ex. pour ignorer une ligne/colonne)
-# Modifiez ce dict pour remapper les positions de l'échiquier aux coordonnées LED réelles.
-pos_to_led = {}
-for row in range(8):
-    for col in range(8):
-        pos_to_led[(row, col)] = (col, row)  # Par défaut: led_x = col, led_y = row
+# Registres MCP23017
+GPIOA, GPIOB = 0x12, 0x13
+IODIRA, IODIRB = 0x00, 0x01
+GPPUA, GPPUB = 0x0C, 0x0D
 
-# Initialisation du bus I²C principal
-i2c = busio.I2C(board.SCL, board.SDA)
+# Mapping des canaux TCA vers les MCP23017
+# Canal 0 = MCP0 (rows 1-2)
+# Canal 1 = MCP1 (rows 3-4)
+# Canal 2 = MCP2 (rows 5-6)
+# Canal 3 = MCP3 (rows 7-8)
+REED_TCA_CHANNELS = {
+    0: 0,  # MCP0
+    1: 1,  # MCP1
+    2: 2,  # MCP2
+    3: 3,  # MCP3
+}
 
-# Initialisation du multiplexeur TCA9548A
-tca = TCA9548A(i2c)
+# Mapping complet: case -> (mcp_id, pin, led_positions)
+# Format: 'a1': (mcp_id, 'A0', [(1, 9), (1, 8), (2, 9), (2, 8)])
+# Les coordonnées LED sont en (row_B, col_A) où B1-B9, A1-A9
+CHESS_MAPPING = {
+    # Rangée 1
+    "a1": (0, "A0", [(1, 9), (1, 8), (2, 9), (2, 8)]),
+    "b1": (0, "B0", [(1, 8), (1, 7), (2, 8), (2, 7)]),
+    "c1": (0, "A1", [(1, 7), (1, 6), (2, 7), (2, 6)]),
+    "d1": (0, "B1", [(1, 6), (1, 5), (2, 6), (2, 5)]),
+    "e1": (0, "A2", [(1, 5), (1, 4), (2, 5), (2, 4)]),
+    "f1": (0, "B2", [(1, 4), (1, 3), (2, 4), (2, 3)]),
+    "g1": (0, "A3", [(1, 3), (1, 2), (2, 3), (2, 2)]),
+    "h1": (0, "B3", [(1, 2), (1, 1), (2, 2), (2, 1)]),
+    # Rangée 2
+    "a2": (0, "B7", [(2, 9), (2, 8), (3, 9), (3, 8)]),
+    "b2": (0, "A7", [(2, 8), (2, 7), (3, 8), (3, 7)]),
+    "c2": (0, "B6", [(2, 7), (2, 6), (3, 7), (3, 6)]),
+    "d2": (0, "A6", [(2, 6), (2, 5), (3, 6), (3, 5)]),
+    "e2": (0, "B5", [(2, 5), (2, 4), (3, 5), (3, 4)]),
+    "f2": (0, "A5", [(2, 4), (2, 3), (3, 4), (3, 3)]),
+    "g2": (0, "B4", [(2, 3), (2, 2), (3, 3), (3, 2)]),
+    "h2": (0, "A4", [(2, 2), (2, 1), (3, 2), (3, 1)]),
+    # Rangée 3
+    "a3": (1, "A0", [(3, 9), (3, 8), (4, 9), (4, 8)]),
+    "b3": (1, "B0", [(3, 8), (3, 7), (4, 8), (4, 7)]),
+    "c3": (1, "A1", [(3, 7), (3, 6), (4, 7), (4, 6)]),
+    "d3": (1, "B1", [(3, 6), (3, 5), (4, 6), (4, 5)]),
+    "e3": (1, "A2", [(3, 5), (3, 4), (4, 5), (4, 4)]),
+    "f3": (1, "B2", [(3, 4), (3, 3), (4, 4), (4, 3)]),
+    "g3": (1, "A3", [(3, 3), (3, 2), (4, 3), (4, 2)]),
+    "h3": (1, "B3", [(3, 2), (3, 1), (4, 2), (4, 1)]),
+    # Rangée 4
+    "a4": (1, "B7", [(4, 9), (4, 8), (5, 9), (5, 8)]),
+    "b4": (1, "A7", [(4, 8), (4, 7), (5, 8), (5, 7)]),
+    "c4": (1, "B6", [(4, 7), (4, 6), (5, 7), (5, 6)]),
+    "d4": (1, "A6", [(4, 6), (4, 5), (5, 6), (5, 5)]),
+    "e4": (1, "B5", [(4, 5), (4, 4), (5, 5), (5, 4)]),
+    "f4": (1, "A5", [(4, 4), (4, 3), (5, 4), (5, 3)]),
+    "g4": (1, "B4", [(4, 3), (4, 2), (5, 3), (5, 2)]),
+    "h4": (1, "A4", [(4, 2), (4, 1), (5, 2), (5, 1)]),
+    # Rangée 5
+    "a5": (2, "A0", [(5, 9), (5, 8), (6, 9), (6, 8)]),
+    "b5": (2, "B0", [(5, 8), (5, 7), (6, 8), (6, 7)]),
+    "c5": (2, "A1", [(5, 7), (5, 6), (6, 7), (6, 6)]),
+    "d5": (2, "B1", [(5, 6), (5, 5), (6, 6), (6, 5)]),
+    "e5": (2, "A2", [(5, 5), (5, 4), (6, 5), (6, 4)]),
+    "f5": (2, "B2", [(5, 4), (5, 3), (6, 4), (6, 3)]),
+    "g5": (2, "A3", [(5, 3), (5, 2), (6, 3), (6, 2)]),
+    "h5": (2, "B3", [(5, 2), (5, 1), (6, 2), (6, 1)]),
+    # Rangée 6
+    "a6": (2, "B7", [(6, 9), (6, 8), (7, 9), (7, 8)]),
+    "b6": (2, "A7", [(6, 8), (6, 7), (7, 8), (7, 7)]),
+    "c6": (2, "B6", [(6, 7), (6, 6), (7, 7), (7, 6)]),
+    "d6": (2, "A6", [(6, 6), (6, 5), (7, 6), (7, 5)]),
+    "e6": (2, "B5", [(6, 5), (6, 4), (7, 5), (7, 4)]),
+    "f6": (2, "A5", [(6, 4), (6, 3), (7, 4), (7, 3)]),
+    "g6": (2, "B4", [(6, 3), (6, 2), (7, 3), (7, 2)]),
+    "h6": (2, "A4", [(6, 2), (6, 1), (7, 2), (7, 1)]),
+    # Rangée 7
+    "a7": (3, "A0", [(7, 9), (7, 8), (8, 9), (8, 8)]),
+    "b7": (3, "B0", [(7, 8), (7, 7), (8, 8), (8, 7)]),
+    "c7": (3, "A1", [(7, 7), (7, 6), (8, 7), (8, 6)]),
+    "d7": (3, "B1", [(7, 6), (7, 5), (8, 6), (8, 5)]),
+    "e7": (3, "A2", [(7, 5), (7, 4), (8, 5), (8, 4)]),
+    "f7": (3, "B2", [(7, 4), (7, 3), (8, 4), (8, 3)]),
+    "g7": (3, "A3", [(7, 3), (7, 2), (8, 3), (8, 2)]),
+    "h7": (3, "B3", [(7, 2), (7, 1), (8, 2), (8, 1)]),
+    # Rangée 8
+    "a8": (3, "B7", [(8, 9), (8, 8), (9, 9), (9, 8)]),
+    "b8": (3, "A7", [(8, 8), (8, 7), (9, 8), (9, 7)]),
+    "c8": (3, "B6", [(8, 7), (8, 6), (9, 7), (9, 6)]),
+    "d8": (3, "A6", [(8, 6), (8, 5), (9, 6), (9, 5)]),
+    "e8": (3, "B5", [(8, 5), (8, 4), (9, 5), (9, 4)]),
+    "f8": (3, "A5", [(8, 4), (8, 3), (9, 4), (9, 3)]),
+    "g8": (3, "B4", [(8, 3), (8, 2), (9, 3), (9, 2)]),
+    "h8": (3, "A4", [(8, 2), (8, 1), (9, 2), (9, 1)]),
+}
 
-# Initialisation du module IS31FL3731 sur le canal 4
-i2c_led = tca[4]
-display = Matrix(i2c_led)
+# Diagonale cassée (B9) - filtrer ces LEDs
+BROKEN_LEDS = [(9, i) for i in range(1, 10)]  # Toute la ligne B9
 
-# Initialisation des MCP23017 (assumés sur canaux 0-3 à l'adresse 0x20)
-mcps = []
-for ch in range(4):
-    try:
-        mcp = MCP23017(tca[ch], address=0x20)
-        # Configuration : tous les pins en entrée avec pull-ups
-        mcp.iodir = 0xFFFF
-        mcp.gppu = 0xFFFF
-        mcps.append(mcp)
-        print(f"MCP23017 initialisé sur canal {ch}.")
-    except (OSError, ValueError):
-        print(f"Aucun MCP23017 détecté sur canal {ch}.")
 
-if not mcps:
-    raise SystemExit("Aucun MCP23017 détecté. Vérifiez le câblage.")
+class ChessDetector:
+    """Détecteur de pièces d'échecs avec affichage LED."""
 
-# --- Séquence de test LED ---
-display.fill(0)
+    def __init__(self):
+        """Initialise les composants matériels."""
+        print("Initialisation du détecteur d'échecs...")
 
-# LED centrale (ajustez si nécessaire pour votre mapping LED)
-display.pixel(4, 4, 255)
-time.sleep(1)
+        # Initialisation du bus I2C pour la matrice LED
+        self.i2c = busio.I2C(board.SCL, board.SDA)
+        self.tca = TCA9548A(self.i2c)
 
-# Diagonale
-display.fill(0)
-for i in range(9):
-    display.pixel(i, i, 180)
-    time.sleep(0.1)
+        # Initialisation de la matrice LED
+        i2c_led = self.tca[LED_TCA_CHANNEL]
+        self.display = Matrix(i2c_led)
+        self.display.fill(0)
+        print(f"  ✓ Matrice LED initialisée (canal TCA {LED_TCA_CHANNEL})")
 
-# Balayage horizontal
-display.fill(0)
-for x in range(9):
-    display.fill(0)
-    for y in range(9):
-        display.pixel(x, y, 255)
-    time.sleep(0.1)
+        # Initialisation du bus I2C pour les reed sensors (SMBus)
+        self.bus = SMBus(I2C_BUSNUM)
 
-# Variation d’intensité
-for brightness in range(0, 256, 32):
-    display.fill(brightness)
-    time.sleep(0.2)
+        # Initialisation des MCP23017
+        self.mcp_initialized = {}
+        for mcp_id in range(4):
+            channel = REED_TCA_CHANNELS[mcp_id]
+            if self._init_mcp(mcp_id, channel):
+                self.mcp_initialized[mcp_id] = True
+                print(
+                    f"  ✓ MCP{mcp_id} initialisé (canal TCA {channel}, addr 0x{MCP_BASE_ADDR + mcp_id:02X})"
+                )
+            else:
+                self.mcp_initialized[mcp_id] = False
+                print(f"  ✗ MCP{mcp_id} non détecté")
 
-display.fill(0)
-print("Séquence de test LED terminée.")
+        # État précédent des cases actives pour optimisation
+        self.previous_active_squares = set()
 
-# --- Boucle principale pour détection et affichage ---
-previous = set()
-potential_start = None
-last_start = None
-last_end = None
+        print("Initialisation terminée!\n")
 
-while True:
-    current = set()
-    for ch, mcp in enumerate(mcps):
-        gpio = mcp.gpio
-        for pin in range(16):
-            if not (gpio & (1 << pin)):  # Bit à 0 : reed actif (aimant détecté)
-                pos = reed_to_pos.get((ch, pin))
-                if pos and 0 <= pos[0] <= 7 and 0 <= pos[1] <= 7:
-                    current.add(pos)
-
-    # Détection des changements pour identifier les coups
-    removed = previous - current
-    added = current - previous
-
-    if removed and not added:
-        if len(removed) == 1:
-            potential_start = list(removed)[0]
-            print(f"Pièce enlevée de {potential_start}")
+    def _tca_select(self, channel):
+        """Sélectionne un canal sur le multiplexeur TCA9548A (via SMBus)."""
+        if channel is None:
+            self.bus.write_byte(TCA_I2C_ADDR, 0x00)
         else:
-            print(f"Multiples enlevés : {removed}")
-    elif added and not removed:
-        if len(added) == 1 and potential_start:
-            end = list(added)[0]
-            if end != potential_start:
-                last_start = potential_start
-                last_end = end
-                print(f"Coup détecté : de {last_start} à {last_end}")
-            potential_start = None
-        else:
-            print(f"Ajout sans départ ou multiple : {added}")
-    elif removed or added:
-        print(f"Changement complexe : enlevés {removed}, ajoutés {added}")
+            self.bus.write_byte(TCA_I2C_ADDR, 1 << channel)
 
-    # Affichage : éteint tout, allume les positions avec aimants + cases de départ/arrivée du dernier coup
-    display.fill(0)
-    for pos in current:
-        led_pos = pos_to_led.get(pos)
-        if led_pos:
-            display.pixel(led_pos[0], led_pos[1], 255)
-    if last_start:
-        led_pos = pos_to_led.get(last_start)
-        if led_pos:
-            display.pixel(led_pos[0], led_pos[1], 255)
-    if last_end:
-        led_pos = pos_to_led.get(last_end)
-        if led_pos:
-            display.pixel(led_pos[0], led_pos[1], 255)
+    def _init_mcp(self, mcp_id, tca_channel):
+        """Initialise un MCP23017."""
+        try:
+            self._tca_select(tca_channel)
+            time.sleep(0.01)
 
-    previous = current.copy()
-    time.sleep(0.1)  # Pause pour éviter une surcharge CPU, ajustable
+            addr = MCP_BASE_ADDR + mcp_id
+            # Configuration: tous les pins en entrée avec pull-up
+            self.bus.write_byte_data(addr, IODIRA, 0xFF)
+            self.bus.write_byte_data(addr, IODIRB, 0xFF)
+            self.bus.write_byte_data(addr, GPPUA, 0xFF)
+            self.bus.write_byte_data(addr, GPPUB, 0xFF)
+            return True
+        except OSError:
+            return False
+
+    def _read_mcp_gpio(self, mcp_id, tca_channel):
+        """Lit les états GPIO d'un MCP23017."""
+        try:
+            self._tca_select(tca_channel)
+            time.sleep(0.005)
+
+            addr = MCP_BASE_ADDR + mcp_id
+            gpio_a = self.bus.read_byte_data(addr, GPIOA)
+            gpio_b = self.bus.read_byte_data(addr, GPIOB)
+            return gpio_a, gpio_b
+        except OSError:
+            return None, None
+
+    def _is_pin_active(self, gpio_value, pin_name):
+        """Vérifie si un pin est actif (bit à 0 = contact fermé)."""
+        if gpio_value is None:
+            return False
+
+        # Extraire le numéro de pin (A0-A7 ou B0-B7)
+        port = pin_name[0]
+        pin_num = int(pin_name[1])
+
+        # Le bit est à 0 quand le reed est activé
+        return not bool(gpio_value & (1 << pin_num))
+
+    def scan_active_squares(self):
+        """Scanne tous les reed sensors et retourne les cases actives."""
+        active_squares = set()
+
+        for square, (mcp_id, pin_name, _) in CHESS_MAPPING.items():
+            if not self.mcp_initialized.get(mcp_id, False):
+                continue
+
+            channel = REED_TCA_CHANNELS[mcp_id]
+            gpio_a, gpio_b = self._read_mcp_gpio(mcp_id, channel)
+
+            if gpio_a is None:
+                continue
+
+            # Déterminer quelle valeur GPIO utiliser
+            gpio_value = gpio_a if pin_name[0] == "A" else gpio_b
+
+            if self._is_pin_active(gpio_value, pin_name):
+                active_squares.add(square)
+
+        return active_squares
+
+    def update_leds(self, active_squares):
+        """Met à jour l'affichage LED en fonction des cases actives."""
+        # Optimisation: ne mettre à jour que si changement
+        if active_squares == self.previous_active_squares:
+            return
+
+        # Éteindre toutes les LEDs
+        self.display.fill(0)
+
+        # Allumer les LEDs pour chaque case active
+        for square in active_squares:
+            _, _, led_positions = CHESS_MAPPING[square]
+
+            for row, col in led_positions:
+                # Filtrer la diagonale cassée
+                if (row, col) in BROKEN_LEDS:
+                    continue
+
+                # Convertir les coordonnées (B row, A col) en (x, y) pour la matrice
+                # La matrice utilise (x=col-1, y=row-1) car indexé de 0
+                x = row - 1  # B1-B9 -> 0-8
+                y = col - 1  # A1-A9 -> 0-8
+
+                try:
+                    self.display.pixel(x, y, LED_BRIGHTNESS)
+                except (ValueError, IndexError):
+                    # Ignorer les coordonnées hors limites
+                    pass
+
+        self.previous_active_squares = active_squares.copy()
+
+    def run(self):
+        """Boucle principale de détection."""
+        print("Détection en cours... (Ctrl+C pour arrêter)")
+        print("-" * 60)
+
+        try:
+            while True:
+                # Scanner les cases actives
+                active_squares = self.scan_active_squares()
+
+                # Mettre à jour les LEDs
+                self.update_leds(active_squares)
+
+                # Afficher l'état si des pièces sont détectées
+                if active_squares:
+                    squares_list = sorted(active_squares)
+                    print(
+                        f"\rPièces détectées: {', '.join(squares_list)}",
+                        end="",
+                        flush=True,
+                    )
+                elif self.previous_active_squares:
+                    # Effacer la ligne quand toutes les pièces sont retirées
+                    print("\r" + " " * 60 + "\r", end="", flush=True)
+
+                time.sleep(0.1)  # 10 Hz de rafraîchissement
+
+        except KeyboardInterrupt:
+            print("\n\nArrêt du programme...")
+        finally:
+            self.cleanup()
+
+    def cleanup(self):
+        """Nettoie les ressources."""
+        print("Nettoyage...")
+        self.display.fill(0)
+        self._tca_select(None)
+        self.bus.close()
+        print("Programme terminé.")
+
+
+def main():
+    """Point d'entrée principal."""
+    detector = ChessDetector()
+    detector.run()
+
+
+if __name__ == "__main__":
+    main()
