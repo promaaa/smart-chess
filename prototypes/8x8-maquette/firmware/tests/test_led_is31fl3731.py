@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+"""
+test_led_is31fl3731.py - Test de la matrice LED avec IS31FL3731
+
+Ce programme teste la matrice LED 9x9 contrôlée par un IS31FL3731.
+Le driver IS31FL3731 est connecté via le canal 4 du multiplexeur TCA9548A.
+"""
+
 import time
 import board
 import busio
