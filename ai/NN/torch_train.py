@@ -28,10 +28,14 @@ LEAKY_ALPHA = 0.01
 # Hyperparamètres
 LEARNING_RATE = 0.0001
 WEIGHT_DECAY = 1e-4  # L2 regularization (AdamW)
-EPOCHS = 20
+EPOCHS = 10
 BATCH_SIZE = 128  # Plus grand pour GPU
 MAX_SAMPLES = 500_000  # Plus de données avec GPU !
 EVAL_MAX_SAMPLES = 5000
+
+# Gradient debugging / instrumentation
+LOG_GRAD_NORM = True  # Imprimer périodiquement la norme des gradients
+GRAD_LOG_EVERY = 100   # toutes les N mini-batches
 
 # Options
 USE_SAMPLING = True
@@ -40,7 +44,7 @@ DEBUG_STATS = True
 
 # LR Scheduler
 USE_LR_SCHEDULER = True
-LR_PATIENCE = 4
+LR_PATIENCE = 3
 LR_FACTOR = 0.5
 
 # LR Warmup
@@ -301,6 +305,21 @@ def main():
         )
     
     print(f"\n{'='*70}")
+    # --- Sanity check: display actual model layer sizes vs configured HIDDEN_SIZE ---
+    try:
+        in_f = getattr(model.l1, 'in_features', None)
+        out1 = getattr(model.l1, 'out_features', None)
+        out2 = getattr(model.l2, 'out_features', None)
+        out3 = getattr(model.l3, 'out_features', None)
+        if None not in (in_f, out1, out2, out3):
+            print(f"🔎 Modèle détecté: {in_f} → {out1} → {out2} → {out3}")
+            if out1 != out2:
+                print(f"⚠️ Incohérence structurelle : 2 hidden layers de tailles différentes ({out1}, {out2}).")
+            if out1 != HIDDEN_SIZE or out2 != HIDDEN_SIZE:
+                print(f"⚠️ La constante HIDDEN_SIZE={HIDDEN_SIZE} diffère des tailles effectives du modèle ({out1}, {out2}). Ceci peut venir d'un chargement de poids sauvegardés avec une architecture différente.")
+    except Exception:
+        pass
+
     print(f"Configuration:")
     print(f"  Dataset complet: {len(all_fens):,} positions")
     print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING else len(all_fens):,} positions")
@@ -399,6 +418,33 @@ def main():
             
             # Backward
             loss.backward()
+
+            # --- Instrumentation gradients (avant clipping) ---
+            if LOG_GRAD_NORM and (batch_idx % GRAD_LOG_EVERY == 0 or batch_idx == 0):
+                try:
+                    total_grad_norm_sq = 0.0
+                    max_abs_grad = 0.0
+                    for p in model.parameters():
+                        if p.grad is None:
+                            continue
+                        g = p.grad.detach()
+                        gn = float(g.norm(2).cpu().item())
+                        total_grad_norm_sq += gn * gn
+                        try:
+                            max_abs_grad = max(max_abs_grad, float(g.abs().max().cpu().item()))
+                        except Exception:
+                            pass
+                    total_grad_norm = total_grad_norm_sq ** 0.5
+                    total_param_norm_sq = 0.0
+                    for p in model.parameters():
+                        try:
+                            total_param_norm_sq += float(p.data.norm(2).cpu().item()) ** 2
+                        except Exception:
+                            pass
+                    total_param_norm = total_param_norm_sq ** 0.5
+                    print(f"[GRAD] epoch={epoch+1} batch={batch_idx} grad_norm={total_grad_norm:.6f} max_abs_grad={max_abs_grad:.6f} param_norm={total_param_norm:.6f}")
+                except Exception:
+                    pass
             
             # Gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
