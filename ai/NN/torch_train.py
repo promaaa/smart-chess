@@ -325,7 +325,6 @@ def main():
     print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING else len(all_fens):,} positions")
     print(f"  Architecture (NNUE-like): 768 → {HIDDEN1} → {HIDDEN2} → {HIDDEN3} → 1")
     print(f"  Dropout: {DROPOUT}")
-    print(f"  LeakyReLU alpha: {LEAKY_ALPHA}")
     print(f"  Learning rate: {LEARNING_RATE} (AdamW, weight decay: {WEIGHT_DECAY})")
     print(f"  LR Warmup: {USE_LR_WARMUP} ({WARMUP_START_LR if USE_LR_WARMUP else 'N/A'} → {LEARNING_RATE})")
     print(f"  LR Scheduler: {USE_LR_SCHEDULER} (patience: {LR_PATIENCE if USE_LR_SCHEDULER else 'N/A'})")
