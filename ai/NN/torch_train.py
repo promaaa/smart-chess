@@ -20,10 +20,11 @@ DATASET_PATH = "C:\\Users\\gauti\\OneDrive\\Documents\\UE commande\\chessData.cs
 WEIGHTS_FILE = "chess_nn_weights.npz"
 CHECKPOINT_FILE = "chess_model_checkpoint.pt"
 
-# Architecture
-HIDDEN_SIZE = 256
-DROPOUT = 0.3
-LEAKY_ALPHA = 0.01
+# Architecture (NNUE-like: 768 → 4096 → 256 → 32 → 1)
+HIDDEN1 = 4096
+HIDDEN2 = 256
+HIDDEN3 = 32
+DROPOUT = 0.0  # NNUE typically doesn't use dropout
 
 # Hyperparamètres
 LEARNING_RATE = 0.0001
@@ -167,7 +168,7 @@ def main():
     
     if os.path.exists(CHECKPOINT_FILE):
         print(f"📥 Chargement du checkpoint PyTorch: {CHECKPOINT_FILE}")
-        model = TorchNNEvaluator(hidden_size=sys.modules[__name__].HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
+        model = TorchNNEvaluator(hidden1=HIDDEN1, hidden2=HIDDEN2, hidden3=HIDDEN3, dropout=DROPOUT)
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
         model, _, start_step = torch_load_checkpoint(CHECKPOINT_FILE, model, optimizer, device=DEVICE)
         # Also read checkpoint metadata (best_rmse) if present so we don't reset it
@@ -236,13 +237,13 @@ def main():
         print(f"✅ Poids chargés depuis NumPy (best_rmse initial={best_rmse})")
     else:
         print("🆕 Création d'un nouveau réseau...")
-        model = TorchNNEvaluator(hidden_size=HIDDEN_SIZE, dropout=DROPOUT, leaky_alpha=LEAKY_ALPHA)
+        model = TorchNNEvaluator(hidden1=HIDDEN1, hidden2=HIDDEN2, hidden3=HIDDEN3, dropout=DROPOUT)
         # Initialisation He (PyTorch le fait déjà par défaut pour Linear + ReLU)
         optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
         
-        # Warm-start du biais de sortie
+        # Warm-start du biais de sortie (l4 est maintenant la couche de sortie)
         with torch.no_grad():
-            model.l3.bias[0] = eval_mean
+            model.l4.bias[0] = eval_mean
     
     model.to(DEVICE)
     # --- Interactive LR selection at start ---
@@ -305,25 +306,24 @@ def main():
         )
     
     print(f"\n{'='*70}")
-    # --- Sanity check: display actual model layer sizes vs configured HIDDEN_SIZE ---
+    # --- Sanity check: display actual model layer sizes vs configured architecture ---
     try:
         in_f = getattr(model.l1, 'in_features', None)
         out1 = getattr(model.l1, 'out_features', None)
         out2 = getattr(model.l2, 'out_features', None)
         out3 = getattr(model.l3, 'out_features', None)
-        if None not in (in_f, out1, out2, out3):
-            print(f"🔎 Modèle détecté: {in_f} → {out1} → {out2} → {out3}")
-            if out1 != out2:
-                print(f"⚠️ Incohérence structurelle : 2 hidden layers de tailles différentes ({out1}, {out2}).")
-            if out1 != HIDDEN_SIZE or out2 != HIDDEN_SIZE:
-                print(f"⚠️ La constante HIDDEN_SIZE={HIDDEN_SIZE} diffère des tailles effectives du modèle ({out1}, {out2}). Ceci peut venir d'un chargement de poids sauvegardés avec une architecture différente.")
+        out4 = getattr(model.l4, 'out_features', None)
+        if None not in (in_f, out1, out2, out3, out4):
+            print(f"🔎 Modèle détecté: {in_f} → {out1} → {out2} → {out3} → {out4}")
+            if (out1, out2, out3) != (HIDDEN1, HIDDEN2, HIDDEN3):
+                print(f"⚠️ Les constantes HIDDEN1={HIDDEN1}, HIDDEN2={HIDDEN2}, HIDDEN3={HIDDEN3} diffèrent des tailles effectives du modèle ({out1}, {out2}, {out3}). Ceci peut venir d'un chargement de poids sauvegardés avec une architecture différente.")
     except Exception:
         pass
 
     print(f"Configuration:")
     print(f"  Dataset complet: {len(all_fens):,} positions")
     print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING else len(all_fens):,} positions")
-    print(f"  Architecture: 768 → {HIDDEN_SIZE} → {HIDDEN_SIZE} → 1")
+    print(f"  Architecture (NNUE-like): 768 → {HIDDEN1} → {HIDDEN2} → {HIDDEN3} → 1")
     print(f"  Dropout: {DROPOUT}")
     print(f"  LeakyReLU alpha: {LEAKY_ALPHA}")
     print(f"  Learning rate: {LEARNING_RATE} (AdamW, weight decay: {WEIGHT_DECAY})")

@@ -5,31 +5,54 @@ from Chess import Chess
 
 
 class TorchNNEvaluator(nn.Module):
-    """Compact PyTorch evaluator preserving `l1/l2/l3` attributes for compatibility.
+    """NNUE-like PyTorch evaluator with 4 hidden layers.
 
-    Architecture: Linear -> LeakyReLU -> Dropout -> Linear -> LeakyReLU -> Dropout -> Linear
+    Architecture: 768 → 4096 (ReLU) → 256 (ReLU) → 32 (ReLU) → 1 (Linear)
     """
 
-    def __init__(self, input_size=768, hidden_size=256, output_size=1, dropout=0.3, leaky_alpha=0.01):
+    def __init__(self, input_size=768, hidden1=4096, hidden2=256, hidden3=32, output_size=1, dropout=0.0):
         super().__init__()
-        # keep named layer attributes (other scripts reference model.l3.bias)
-        self.l1 = nn.Linear(input_size, hidden_size)
-        self.l2 = nn.Linear(hidden_size, hidden_size)
-        self.l3 = nn.Linear(hidden_size, output_size)
+        # NNUE-style architecture with 4 hidden layers
+        self.l1 = nn.Linear(input_size, hidden1)
+        self.l2 = nn.Linear(hidden1, hidden2)
+        self.l3 = nn.Linear(hidden2, hidden3)
+        self.l4 = nn.Linear(hidden3, output_size)
 
-        self.act = nn.LeakyReLU(negative_slope=leaky_alpha)
-        self.drop1 = nn.Dropout(p=dropout)
-        self.drop2 = nn.Dropout(p=dropout)
-
-        # small helper Sequential for forward (uses same modules above)
-        self.net = nn.Sequential(self.l1, self.act, self.drop1, self.l2, self.act, self.drop2, self.l3)
+        # Use ReLU (NNUE standard) instead of LeakyReLU
+        self.act = nn.ReLU()
+        
+        # Optional dropout (NNUE typically doesn't use dropout, but we keep it configurable)
+        self.dropout = dropout
+        if dropout > 0:
+            self.drop1 = nn.Dropout(p=dropout)
+            self.drop2 = nn.Dropout(p=dropout)
+            self.drop3 = nn.Dropout(p=dropout)
 
         self.input_size = input_size
+        self.hidden1 = hidden1
+        self.hidden2 = hidden2
+        self.hidden3 = hidden3
         # piece map used by encode_board
         self._piece_to_index = {c: i for i, c in enumerate('PNBRQKpnbrqk')}
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+        x = self.l1(x)
+        x = self.act(x)
+        if self.dropout > 0:
+            x = self.drop1(x)
+        
+        x = self.l2(x)
+        x = self.act(x)
+        if self.dropout > 0:
+            x = self.drop2(x)
+        
+        x = self.l3(x)
+        x = self.act(x)
+        if self.dropout > 0:
+            x = self.drop3(x)
+        
+        x = self.l4(x)  # Linear output (no activation)
+        return x
 
     def encode_board(self, chess_instance: Chess, device='cpu') -> torch.Tensor:
         """Encode bitboards into a 768-d float tensor (fast, minimal Python).
@@ -73,7 +96,7 @@ def save_weights_npz(model: TorchNNEvaluator, filename: str, adam_moments: dict 
     """
     sd = model.state_dict()
     save_dict = {}
-    for lname in ('l1', 'l2', 'l3'):
+    for lname in ('l1', 'l2', 'l3', 'l4'):
         wk, bk = _linear_keys(lname)
         w = sd[wk].cpu().numpy().T
         b = sd[bk].cpu().numpy().reshape(1, -1)
@@ -97,19 +120,36 @@ def load_from_npz(filename: str, device='cpu'):
     w1 = data['w1']; b1 = data['b1']
     w2 = data['w2']; b2 = data['b2']
     w3 = data['w3']; b3 = data['b3']
+    w4 = data['w4']; b4 = data['b4']
 
-    model = TorchNNEvaluator(input_size=int(w1.shape[0]), hidden_size=int(w1.shape[1]), output_size=(int(w3.shape[1]) if w3.ndim == 2 else 1))
+    # Infer architecture from saved shapes
+    input_size = int(w1.shape[0])
+    hidden1 = int(w1.shape[1])
+    hidden2 = int(w2.shape[1])
+    hidden3 = int(w3.shape[1])
+    output_size = int(w4.shape[1]) if w4.ndim == 2 else 1
+
+    model = TorchNNEvaluator(
+        input_size=input_size, 
+        hidden1=hidden1, 
+        hidden2=hidden2, 
+        hidden3=hidden3, 
+        output_size=output_size
+    )
+    
     model.l1.weight.data.copy_(torch.from_numpy(w1.T).to(torch.float32))
     model.l1.bias.data.copy_(torch.from_numpy(b1.reshape(-1)).to(torch.float32))
     model.l2.weight.data.copy_(torch.from_numpy(w2.T).to(torch.float32))
     model.l2.bias.data.copy_(torch.from_numpy(b2.reshape(-1)).to(torch.float32))
     model.l3.weight.data.copy_(torch.from_numpy(w3.T).to(torch.float32))
     model.l3.bias.data.copy_(torch.from_numpy(b3.reshape(-1)).to(torch.float32))
+    model.l4.weight.data.copy_(torch.from_numpy(w4.T).to(torch.float32))
+    model.l4.bias.data.copy_(torch.from_numpy(b4.reshape(-1)).to(torch.float32))
 
     # collect optional metadata
     metadata = {}
     for key in data.files:
-        if key not in ('w1', 'b1', 'w2', 'b2', 'w3', 'b3'):
+        if key not in ('w1', 'b1', 'w2', 'b2', 'w3', 'b3', 'w4', 'b4'):
             try:
                 metadata[key] = data[key].tolist() if np.asarray(data[key]).shape == () else data[key]
             except Exception:
