@@ -159,7 +159,16 @@ def main():
     
     print(f"\n📊 Dataset complet: {len(all_fens):,} positions")
     
-    eval_mean = float(np.mean(all_evaluations))
+    # Split train/validation (99% train, 1% validation)
+    from sklearn.model_selection import train_test_split
+    train_fens, val_fens, train_evals, val_evals = train_test_split(
+        all_fens, all_evaluations, test_size=0.01, random_state=42
+    )
+    
+    print(f"📊 Train: {len(train_fens):,} positions")
+    print(f"📊 Validation: {len(val_fens):,} positions")
+    
+    eval_mean = float(np.mean(train_evals))
     
     # 2. Initialiser le modèle
     if RESET_WEIGHTS and os.path.exists(WEIGHTS_FILE):
@@ -321,8 +330,9 @@ def main():
         pass
 
     print(f"Configuration:")
-    print(f"  Dataset complet: {len(all_fens):,} positions")
-    print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING else len(all_fens):,} positions")
+    print(f"  Dataset train: {len(train_fens):,} positions")
+    print(f"  Dataset validation: {len(val_fens):,} positions")
+    print(f"  Échantillon/epoch: {MAX_SAMPLES if USE_SAMPLING else len(train_fens):,} positions")
     print(f"  Architecture (NNUE-like): 768 → {HIDDEN1} → {HIDDEN2} → {HIDDEN3} → 1")
     print(f"  Dropout: {DROPOUT}")
     print(f"  Learning rate: {LEARNING_RATE} (AdamW, weight decay: {WEIGHT_DECAY})")
@@ -348,14 +358,14 @@ def main():
 
     for epoch in range(EPOCHS):
         # Échantillonnage à chaque epoch
-        if USE_SAMPLING and len(all_fens) > MAX_SAMPLES:
-            print(f"\n[Epoch {epoch+1}] 🎲 Échantillonnage: {MAX_SAMPLES:,} positions sur {len(all_fens):,}")
-            idx = np.random.choice(len(all_fens), size=MAX_SAMPLES, replace=False)
-            fens = all_fens[idx]
-            evaluations = all_evaluations[idx]
+        if USE_SAMPLING and len(train_fens) > MAX_SAMPLES:
+            print(f"\n[Epoch {epoch+1}] 🎲 Échantillonnage: {MAX_SAMPLES:,} positions sur {len(train_fens):,}")
+            idx = np.random.choice(len(train_fens), size=MAX_SAMPLES, replace=False)
+            fens = train_fens[idx]
+            evaluations = train_evals[idx]
         else:
-            fens = all_fens
-            evaluations = all_evaluations
+            fens = train_fens
+            evaluations = train_evals
         
         # LR Warmup
         if effective_use_lr_warmup and epoch < WARMUP_EPOCHS:
@@ -472,14 +482,14 @@ def main():
         # Évaluation fin d'époque
         print(f"\n🔍 Évaluation epoch {epoch+1}...")
         
-        # Échantillon d'évaluation
-        if EVAL_MAX_SAMPLES and len(all_fens) > EVAL_MAX_SAMPLES:
-            eval_idx = np.random.choice(len(all_fens), size=EVAL_MAX_SAMPLES, replace=False)
-            eval_fens = all_fens[eval_idx]
-            eval_targets = all_evaluations[eval_idx]
+        # Échantillon d'évaluation (sur le set de validation)
+        if EVAL_MAX_SAMPLES and len(val_fens) > EVAL_MAX_SAMPLES:
+            eval_idx = np.random.choice(len(val_fens), size=EVAL_MAX_SAMPLES, replace=False)
+            eval_fens = val_fens[eval_idx]
+            eval_targets = val_evals[eval_idx]
         else:
-            eval_fens = all_fens
-            eval_targets = all_evaluations
+            eval_fens = val_fens
+            eval_targets = val_evals
         
         eval_dataset = ChessDataset(eval_fens, eval_targets)
         eval_loader = DataLoader(eval_dataset, batch_size=BATCH_SIZE*2, shuffle=False)
