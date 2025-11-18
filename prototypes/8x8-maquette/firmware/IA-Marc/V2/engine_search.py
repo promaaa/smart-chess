@@ -283,3 +283,7 @@ class IterativeDeepeningSearch:
     def stop(self):
         """Arrête la recherche."""
         self.stop_flag = True
+
+
+# Alias pour compatibilité avec engine_main.py
+SearchEngine = IterativeDeepeningSearch
