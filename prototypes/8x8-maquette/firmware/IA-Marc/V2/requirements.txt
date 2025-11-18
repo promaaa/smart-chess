@@ -1,0 +1,41 @@
+# IA-Marc V2 - Requirements
+# Optimized Chess Engine for Raspberry Pi 5
+
+# Core chess library
+python-chess>=1.999
+
+# Optional: Performance monitoring
+psutil>=5.9.0
+
+# Optional: Parallel processing utilities
+# (threading is built-in, but these can help)
+
+# Development/Testing
+pytest>=7.0.0
+pytest-benchmark>=4.0.0
+
+# Optional: For UCI protocol support (if needed)
+# chess-uci>=0.0.5
+
+# Optional: For opening book management
+# Note: We'll implement a simple JSON-based opening book
+# No external dependency needed
+
+# Optional: For web API (if needed)
+# flask>=2.3.0
+# flask-cors>=4.0.0
+
+# Optional: Numba for JIT compilation (advanced optimization)
+# numba>=0.57.0
+# Note: May require LLVM, test compatibility on RPi 5 first
+
+# Note on PyPy:
+# For best performance, use PyPy3 instead of CPython
+# Installation: sudo apt install pypy3
+# Run with: pypy3 -m pip install -r requirements.txt
+# Then: pypy3 your_script.py
+
+# Compatibility notes:
+# - Tested on Python 3.8+
+# - Recommended: Python 3.10+ or PyPy3 3.9+
+# - Raspberry Pi OS 64-bit recommended for best performance

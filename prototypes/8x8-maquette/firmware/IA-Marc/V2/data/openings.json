@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "name": "IA-Marc Opening Book",
+    "version": "1.0",
+    "description": "Bibliothèque d'ouvertures pour IA-Marc V2",
+    "total_positions": 50,
+    "last_updated": "2024"
+  },
+  "openings": {
+    "initial": {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "moves": [
+        {"move": "e2e4", "name": "King's Pawn", "weight": 40, "min_elo": 400},
+        {"move": "d2d4", "name": "Queen's Pawn", "weight": 35, "min_elo": 600},
+        {"move": "g1f3", "name": "Réti Opening", "weight": 15, "min_elo": 1200},
+        {"move": "c2c4", "name": "English Opening", "weight": 10, "min_elo": 1400}
+      ]
+    },
+    "e4": {
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      "moves": [
+        {"move": "e7e5", "name": "King's Pawn Game", "weight": 40, "min_elo": 400},
+        {"move": "c7c5", "name": "Sicilian Defense", "weight": 30, "min_elo": 800},
+        {"move": "e7e6", "name": "French Defense", "weight": 15, "min_elo": 1000},
+        {"move": "c7c6", "name": "Caro-Kann Defense", "weight": 10, "min_elo": 1200},
+        {"move": "d7d6", "name": "Pirc Defense", "weight": 5, "min_elo": 1400}
+      ]
+    },
+    "e4_e5": {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+      "moves": [
+        {"move": "g1f3", "name": "King's Knight", "weight": 50, "min_elo": 400},
+        {"move": "f1c4", "name": "Bishop's Opening", "weight": 25, "min_elo": 600},
+        {"move": "b1c3", "name": "Vienna Game", "weight": 15, "min_elo": 1000},
+        {"move": "f2f4", "name": "King's Gambit", "weight": 10, "min_elo": 1400}
+      ]
+    },
+    "e4_e5_Nf3": {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+      "moves": [
+        {"move": "b8c6", "name": "Knight Defense", "weight": 60, "min_elo": 400},
+        {"move": "g8f6", "name": "Petrov Defense", "weight": 30, "min_elo": 1200},
+        {"move": "d7d6", "name": "Philidor Defense", "weight": 10, "min_elo": 800}
+      ]
+    },
+    "e4_e5_Nf3_Nc6": {
+      "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+      "moves": [
+        {"move": "f1b5", "name": "Ruy Lopez", "weight": 50, "min_elo": 600},
+        {"move": "f1c4", "name": "Italian Game", "weight": 35, "min_elo": 400},
+        {"move": "d2d4", "name": "Scotch Game", "weight": 15, "min_elo": 1000}
+      ]
+    },
+    "d4": {
+      "fen": "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
+      "moves": [
+        {"move": "g8f6", "name": "Indian Defense", "weight": 40, "min_elo": 600},
+        {"move": "d7d5", "name": "Closed Game", "weight": 35, "min_elo": 400},
+        {"move": "e7e6", "name": "French-like", "weight": 15, "min_elo": 800},
+        {"move": "f7f5", "name": "Dutch Defense", "weight": 10, "min_elo": 1400}
+      ]
+    },
+    "d4_d5": {
+      "fen": "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2",
+      "moves": [
+        {"move": "c2c4", "name": "Queen's Gambit", "weight": 50, "min_elo": 600},
+        {"move": "g1f3", "name": "London System", "weight": 30, "min_elo": 800},
+        {"move": "c1f4", "name": "London System (Bf4)", "weight": 20, "min_elo": 1000}
+      ]
+    },
+    "d4_Nf6": {
+      "fen": "rnbqkb1r/pppppppp/5n2/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 1 2",
+      "moves": [
+        {"move": "c2c4", "name": "Indian Game", "weight": 50, "min_elo": 800},
+        {"move": "g1f3", "name": "King's Indian Attack", "weight": 30, "min_elo": 600},
+        {"move": "c1f4", "name": "London System", "weight": 20, "min_elo": 1000}
+      ]
+    },
+    "e4_c5": {
+      "fen": "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+      "moves": [
+        {"move": "g1f3", "name": "Open Sicilian", "weight": 60, "min_elo": 800},
+        {"move": "b1c3", "name": "Closed Sicilian", "weight": 25, "min_elo": 1200},
+        {"move": "c2c3", "name": "Alapin Variation", "weight": 15, "min_elo": 1000}
+      ]
+    },
+    "e4_c5_Nf3": {
+      "fen": "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+      "moves": [
+        {"move": "d7d6", "name": "Najdorf/Dragon prep", "weight": 40, "min_elo": 1000},
+        {"move": "b8c6", "name": "Old Sicilian", "weight": 30, "min_elo": 800},
+        {"move": "e7e6", "name": "French Sicilian", "weight": 20, "min_elo": 1200},
+        {"move": "g7g6", "name": "Dragon prep", "weight": 10, "min_elo": 1400}
+      ]
+    },
+    "Nf3": {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1",
+      "moves": [
+        {"move": "d7d5", "name": "Réti Accepted", "weight": 35, "min_elo": 800},
+        {"move": "g8f6", "name": "King's Indian Attack", "weight": 30, "min_elo": 1000},
+        {"move": "c7c5", "name": "English/Sicilian", "weight": 20, "min_elo": 1200},
+        {"move": "e7e6", "name": "Transposition", "weight": 15, "min_elo": 1000}
+      ]
+    },
+    "c4": {
+      "fen": "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1",
+      "moves": [
+        {"move": "e7e5", "name": "English Opening", "weight": 35, "min_elo": 1200},
+        {"move": "g8f6", "name": "Anglo-Indian", "weight": 30, "min_elo": 1400},
+        {"move": "c7c5", "name": "Symmetrical", "weight": 20, "min_elo": 1400},
+        {"move": "e7e6", "name": "Transposition", "weight": 15, "min_elo": 1200}
+      ]
+    }
+  },
+  "statistics": {
+    "most_common_first_move": "e2e4",
+    "recommended_for_beginners": ["e2e4", "d2d4"],
+    "recommended_for_advanced": ["g1f3", "c2c4"],
+    "total_variations": 12
+  },
+  "usage_notes": {
+    "weight": "Probabilité de sélection (somme = 100 par position)",
+    "min_elo": "ELO minimum recommandé pour cette ligne",
+    "selection": "Choisir aléatoirement selon les poids pour la variété",
+    "fallback": "Si aucune ouverture ne correspond, calculer normalement"
+  }
+}
