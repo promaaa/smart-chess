@@ -117,12 +117,15 @@ class ChessEngine:
             "../book/Cerebellum_Light.bin",
             "book/Cerebellum_Light.bin",
             "../IA-Marc/book/Cerebellum_Light.bin",
+            "../prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
+            "/Users/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
         ]
 
         for path in polyglot_paths:
             book = OpeningBook(path, book_type="polyglot")
             if book.load():
                 logger.info(f"Livre d'ouvertures Polyglot chargé: {path}")
+                self.config.opening_book_path = path
                 return book
 
         # Fallback sur le livre JSON
@@ -130,6 +133,7 @@ class ChessEngine:
         book = OpeningBook(json_path, book_type="json")
         if book.load():
             logger.info(f"Livre d'ouvertures JSON chargé: {json_path}")
+            self.config.opening_book_path = json_path
             return book
 
         logger.warning("Aucun livre d'ouvertures disponible")
