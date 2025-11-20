@@ -44,109 +44,59 @@ class DifficultyLevel:
 
 # Définition de tous les niveaux
 DIFFICULTY_LEVELS = {
-    "ENFANT": DifficultyLevel(
-        name="Enfant",
-        elo=400,
-        depth_limit=1,
-        time_limit=0.3,
-        error_rate=0.40,
-        use_opening_book=False,
-        contempt=0,
-        reduction_factor=0.5,
-        random_move_chance=0.20,
-        blunder_threshold=500,
-        time_variance=0.3,
+    # NIVEAU 1: ELO 200
+    "LEVEL1": DifficultyLevel(
+        name="Niveau 1 (Novice)", elo=200, depth_limit=1, time_limit=0.1,
+        error_rate=0.8, use_opening_book=False, contempt=0, reduction_factor=0.5,
+        random_move_chance=0.5, blunder_threshold=800, time_variance=0.5
     ),
-    "DEBUTANT": DifficultyLevel(
-        name="Débutant",
-        elo=600,
-        depth_limit=2,
-        time_limit=0.5,
-        error_rate=0.30,
-        use_opening_book=False,
-        contempt=0,
-        reduction_factor=0.6,
-        random_move_chance=0.10,
-        blunder_threshold=400,
-        time_variance=0.2,
+    # NIVEAU 2: ELO 400
+    "LEVEL2": DifficultyLevel(
+        name="Niveau 2 (Débutant)", elo=400, depth_limit=1, time_limit=0.2,
+        error_rate=0.6, use_opening_book=False, contempt=0, reduction_factor=0.5,
+        random_move_chance=0.3, blunder_threshold=600, time_variance=0.4
     ),
-    "AMATEUR": DifficultyLevel(
-        name="Amateur",
-        elo=1000,
-        depth_limit=3,
-        time_limit=1.0,
-        error_rate=0.20,
-        use_opening_book=True,
-        contempt=0,
-        reduction_factor=0.7,
-        random_move_chance=0.05,
-        blunder_threshold=300,
-        time_variance=0.15,
+    # NIVEAU 3: ELO 600
+    "LEVEL3": DifficultyLevel(
+        name="Niveau 3", elo=600, depth_limit=2, time_limit=0.3,
+        error_rate=0.4, use_opening_book=False, contempt=0, reduction_factor=0.6,
+        random_move_chance=0.2, blunder_threshold=500, time_variance=0.3
     ),
-    "CLUB": DifficultyLevel(
-        name="Club",
-        elo=1400,
-        depth_limit=4,
-        time_limit=2.0,
-        error_rate=0.10,
-        use_opening_book=True,
-        contempt=10,
-        reduction_factor=0.8,
-        random_move_chance=0.02,
-        blunder_threshold=200,
-        time_variance=0.1,
+    # NIVEAU 4: ELO 800
+    "LEVEL4": DifficultyLevel(
+        name="Niveau 4", elo=800, depth_limit=2, time_limit=0.5,
+        error_rate=0.3, use_opening_book=True, contempt=0, reduction_factor=0.6,
+        random_move_chance=0.1, blunder_threshold=400, time_variance=0.2
     ),
-    "COMPETITION": DifficultyLevel(
-        name="Compétition",
-        elo=1800,
-        depth_limit=6,
-        time_limit=4.0,
-        error_rate=0.05,
-        use_opening_book=True,
-        contempt=15,
-        reduction_factor=0.85,
-        random_move_chance=0.0,
-        blunder_threshold=150,
-        time_variance=0.05,
+    # NIVEAU 5: ELO 1000
+    "LEVEL5": DifficultyLevel(
+        name="Niveau 5 (Amateur)", elo=1000, depth_limit=3, time_limit=1.0,
+        error_rate=0.2, use_opening_book=True, contempt=5, reduction_factor=0.7,
+        random_move_chance=0.05, blunder_threshold=300, time_variance=0.15
     ),
-    "EXPERT": DifficultyLevel(
-        name="Expert",
-        elo=2000,
-        depth_limit=8,
-        time_limit=8.0,
-        error_rate=0.02,
-        use_opening_book=True,
-        contempt=20,
-        reduction_factor=0.9,
-        random_move_chance=0.0,
-        blunder_threshold=100,
-        time_variance=0.02,
+    # NIVEAU 6: ELO 1200
+    "LEVEL6": DifficultyLevel(
+        name="Niveau 6", elo=1200, depth_limit=3, time_limit=1.5,
+        error_rate=0.1, use_opening_book=True, contempt=10, reduction_factor=0.7,
+        random_move_chance=0.02, blunder_threshold=200, time_variance=0.1
     ),
-    "MAITRE": DifficultyLevel(
-        name="Maître",
-        elo=2200,
-        depth_limit=10,
-        time_limit=15.0,
-        error_rate=0.0,
-        use_opening_book=True,
-        contempt=25,
-        reduction_factor=1.0,
-        random_move_chance=0.0,
-        blunder_threshold=50,
-        time_variance=0.0,
+    # NIVEAU 7: ELO 1400
+    "LEVEL7": DifficultyLevel(
+        name="Niveau 7 (Club)", elo=1400, depth_limit=4, time_limit=2.0,
+        error_rate=0.05, use_opening_book=True, contempt=15, reduction_factor=0.8,
+        random_move_chance=0.0, blunder_threshold=150, time_variance=0.05
     ),
-    "MAXIMUM": DifficultyLevel(
-        name="Maximum",
-        elo=2400,
-        depth_limit=20,  # Limité par le temps
-        time_limit=30.0,
-        error_rate=0.0,
-        use_opening_book=True,
-        contempt=30,
-        reduction_factor=1.0,
-        random_move_chance=0.0,
-        blunder_threshold=0,
-        time_variance=0.0,
+    # NIVEAU 8: ELO 1600
+    "LEVEL8": DifficultyLevel(
+        name="Niveau 8", elo=1600, depth_limit=5, time_limit=3.0,
+        error_rate=0.02, use_opening_book=True, contempt=20, reduction_factor=0.9,
+        random_move_chance=0.0, blunder_threshold=100, time_variance=0.02
+    ),
+    # NIVEAU 9: ELO 1800
+    "LEVEL9": DifficultyLevel(
+        name="Niveau 9 (Expert)", elo=1800, depth_limit=6, time_limit=4.0,
+        error_rate=0.0, use_opening_book=True, contempt=25, reduction_factor=1.0,
+        random_move_chance=0.0, blunder_threshold=50, time_variance=0.0
     ),
 }
 
@@ -277,7 +227,7 @@ class EngineConfig:
 
     # Niveau et personnalité
     difficulty_level: DifficultyLevel = field(
-        default_factory=lambda: DIFFICULTY_LEVELS["CLUB"]
+        default_factory=lambda: DIFFICULTY_LEVELS["LEVEL7"]
     )
     personality: Personality = field(default_factory=lambda: PERSONALITIES["EQUILIBRE"])
 

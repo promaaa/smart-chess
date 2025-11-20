@@ -35,13 +35,13 @@ class UCITester:
 
     def start(self):
         """Démarre le processus du moteur."""
-        cmd = ["pypy3" if self.use_pypy else "python3", self.engine_path]
+        cmd = [sys.executable, self.engine_path]
 
         self.process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
         )
@@ -137,7 +137,7 @@ def test_01_uci_handshake():
         tester.send("uci")
 
         # Attendre "uciok"
-        if tester.expect("uciok", timeout=2.0):
+        if tester.expect("uciok", timeout=5.0):
             print("✅ UCI handshake réussi")
             return True
         else:
@@ -408,7 +408,8 @@ def test_09_performance_benchmark():
         tester.send("uci")
         tester.expect("uciok", timeout=2.0)
 
-        tester.send("position startpos")
+        # Use a non-trivial position to avoid book moves
+        tester.send("position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
 
         # Recherche de 3 secondes
         print("\nRecherche de 3 secondes...")

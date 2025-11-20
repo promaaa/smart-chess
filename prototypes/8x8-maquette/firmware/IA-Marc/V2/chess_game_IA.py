@@ -134,8 +134,8 @@ def setup_new_ai():
     try:
         print("Initialisation de l'IA-Marc V2...")
         ai = ChessEngine()
-        ai.set_level("Club")  # Niveau par défaut
-        print(f"IA-Marc V2 prête (Niveau: Club)")
+        ai.set_level("LEVEL7")  # Niveau par défaut
+        print(f"IA-Marc V2 prête (Niveau par défaut: Club)")
         return ai
     except Exception as e:
         print(f"Erreur lors de l'initialisation de l'IA: {e}")
@@ -188,7 +188,7 @@ def get_initial_state(sensor_pins):
                     if is_expected:
                         board_display += "[X]"
                     else:
-                        board_display += "[!]"
+                        board_display += "[!""
                         is_pos_correct = False
                         errors_found.append(((r, c), "extra"))
                 else:

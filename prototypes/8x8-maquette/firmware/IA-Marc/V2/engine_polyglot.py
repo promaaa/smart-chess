@@ -39,7 +39,6 @@ ENTRY_SIZE = 16
 # Tables Zobrist supprimées car on utilise chess.polyglot
 
 
-
 # ============================================================================
 # FONCTIONS ZOBRIST POLYGLOT
 # ============================================================================

@@ -39,3 +39,4 @@ pytest-benchmark>=4.0.0
 # - Tested on Python 3.8+
 # - Recommended: Python 3.10+ or PyPy3 3.9+
 # - Raspberry Pi OS 64-bit recommended for best performance
+matplotlib

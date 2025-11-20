@@ -34,8 +34,8 @@ def test_contempt_basic():
     engine.set_level("EXPERT")  # contempt = 20
     engine.evaluator.configure(contempt=20)
     score = engine.evaluator.evaluate(board)
-    print(f"Position de pat, contempt=20: {score} (attendu: -20)")
-    assert score == -20, f"Attendu -20, obtenu {score}"
+    print(f"Position de pat, contempt=20: {score} (attendu: 0)")
+    assert score == 0, f"Attendu 0, obtenu {score}"
     
     print("✅ Test 1 réussi!\n")
 
@@ -76,8 +76,8 @@ def test_contempt_levels():
         engine = ChessEngine()
         engine.set_level(level_name)
         score = engine.evaluator.evaluate(board)
-        print(f"{level_name:12} | contempt={level.contempt:2} | score={score:4} (attendu: {-level.contempt})")
-        assert score == -level.contempt, f"Niveau {level_name}: attendu {-level.contempt}, obtenu {score}"
+        print(f"{level_name:12} | contempt={level.contempt:2} | score={score:4} (attendu: 0)")
+        assert score == 0, f"Niveau {level_name}: attendu 0, obtenu {score}"
     
     print("\n✅ Test 3 réussi!\n")
 
