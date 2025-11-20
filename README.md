@@ -43,3 +43,11 @@ python3 chess_game_IA_menu.py
 ### AI Difficulty Levels
 
 The AI has 9 difficulty levels, ranging from ELO 200 (Novice) to 1800 (Expert). You can select the level through the on-screen menu at the start of the game.
+
+### Opening Book (Optional, for stronger AI)
+
+For an even stronger AI, especially in the opening phase, you can download a Polyglot book file.
+Download `Cerebellum_Light.bin` (or a similar `.bin` book) from:
+[https://zipproth.de/Brainfish/download/](https://zipproth.de/Brainfish/download/)
+
+Place the downloaded `.bin` file into the `prototypes/8x8-maquette/firmware/IA-Marc/book/` directory.
