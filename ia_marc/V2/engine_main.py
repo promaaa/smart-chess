@@ -116,23 +116,11 @@ class ChessEngine:
         # Essayer d'abord Cerebellum (full) pour la meilleure qualité, puis Light
         polyglot_paths = [
             # Cerebellum (full) - 800MB, 2M+ positions - BEST
-            "../book/Cerebellum.bin",
-            "book/Cerebellum.bin",
-            "../IA-Marc/book/Cerebellum.bin",
+            "ia_marc/book/Cerebellum.bin",
             # Cerebellum3Merge - 170MB, excellent quality
-            "../book/Cerebellum3Merge.bin",
-            "book/Cerebellum3Merge.bin",
-            "../IA-Marc/book/Cerebellum3Merge.bin",
-            # Chemins absolus pour exécution depuis ai_comparison/
-            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum.bin",
-            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum3Merge.bin",
+            "ia_marc/book/Cerebellum3Merge.bin",
             # Cerebellum Light - 157MB, 500k+ positions - EXCELLENT
-            "../book/Cerebellum_Light.bin",
-            "book/Cerebellum_Light.bin",
-            "../IA-Marc/book/Cerebellum_Light.bin",
-            "../prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
-            "/Users/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
-            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
+            "ia_marc/book/Cerebellum_Light.bin",
         ]
 
         for path in polyglot_paths:
@@ -143,7 +131,7 @@ class ChessEngine:
                 return book
 
         # Fallback sur le livre JSON
-        json_path = "data/openings.json"
+        json_path = "ia_marc/V2/data/openings.json"
         book = OpeningBook(json_path, book_type="json")
         if book.load():
             logger.info(f"Livre d'ouvertures JSON chargé: {json_path}")
@@ -480,7 +468,7 @@ def example_basic():
     engine = ChessEngine()
 
     # Configurer le niveau
-    engine.set_level("Club")
+    engine.set_level("LEVEL4")
 
     # Position initiale
     board = chess.Board()
@@ -536,13 +524,13 @@ def example_all_levels():
     board = chess.Board()
 
     levels = [
-        "Enfant",
-        "Debutant",
-        "Amateur",
-        "Club",
-        "Competition",
-        "Expert",
-        "Maitre",
+        "LEVEL1",
+        "LEVEL2",
+        "LEVEL3",
+        "LEVEL4",
+        "LEVEL5",
+        "LEVEL6",
+        "LEVEL7",
     ]
 
     for level_name in levels:

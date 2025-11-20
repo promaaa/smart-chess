@@ -241,7 +241,7 @@ class EngineConfig:
 
     # Opening Book
     use_opening_book: bool = True
-    opening_book_path: str = "data/openings.json"
+    opening_book_path: str = "ia_marc/V2/data/openings.json"
     opening_variety: int = 3  # Nombre de variantes à considérer
 
     # Recherche

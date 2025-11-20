@@ -22,6 +22,7 @@ from engine_config import EngineConfig
 from engine_opening import OpeningBook
 from engine_ordering import MoveOrderer
 from engine_tt import TranspositionTable, TTEntryType
+from engine_see import see  # SEE pour pruning en Q-search
 
 # Constantes de recherche
 INFINITY = 999999
@@ -114,10 +115,16 @@ class IterativeDeepeningSearch:
         aspiration_window = self.config.aspiration_window_size
         alpha, beta = -INFINITY, INFINITY
 
+        # Time Management: Soft et Hard bounds
+        # Soft bound: peut être dépassé si le score s'améliore
+        # Hard bound: arrêt forcé
+        soft_bound = self.time_limit * 0.4  # 40% du temps
+        hard_bound = self.time_limit * 0.85  # 85% du temps
+        
         # Boucle d'approfondissement itératif
         prev_score = 0
         for current_depth in range(1, depth_limit + 1):
-            self.seldepth = 0
+            self.seldepth = current_depth
 
             # Appliquer la fenêtre d'aspiration à partir de la profondeur 5
             if use_aspiration and current_depth >= 5:
@@ -155,8 +162,22 @@ class IterativeDeepeningSearch:
                 f"info depth {current_depth} seldepth {self.seldepth} score {score_str} nodes {self.nodes} nps {nps} time {int(elapsed * 1000)} pv {best_move.uci() if best_move else ''}"
             )
 
-            if abs(score) > MATE_SCORE - 100: break
-            if self.time_limit > 0 and elapsed > self.time_limit: break
+            # Gestion du temps sophistiquée
+            # Si mat détecté, arrêter
+            if abs(score) > MATE_SCORE - 100: 
+                break
+            
+            # Hard bound: toujours respecté
+            if self.time_limit > 0 and elapsed > hard_bound:
+                break
+            
+            # Soft bound: peut être dépassé si le score s'améliore
+            if self.time_limit > 0 and elapsed > soft_bound:
+                # Si le score baisse ou stagne, arrêter
+                score_improvement = score - prev_score
+                if score_improvement < 20:  # Moins de 20cp d'amélioration
+                    break
+                # Sinon, continuer jusqu'au hard bound
 
             prev_score = score
 
@@ -202,6 +223,11 @@ class IterativeDeepeningSearch:
         tt_hit, tt_score, tt_move = self.tt.probe(board, depth, alpha, beta, ply)
         if tt_hit: return tt_score
 
+        # Internal Iterative Reduction (IIR)
+        # Réduit la profondeur si pas de coup TT pour forcer une recherche rapide
+        if not tt_hit and depth >= 4:
+            depth -= 1
+
         if depth <= 0: return self.quiescence(board, alpha, beta, ply)
         if board.is_game_over(): return self.finish_game_score(board, ply)
 
@@ -216,6 +242,14 @@ class IterativeDeepeningSearch:
             if null_score >= beta:
                 return beta
 
+        # Reverse Futility Pruning (RFP)
+        # Si éval statique >> beta, position trop bonne, on peut couper
+        if depth <= 4 and not in_check and abs(beta) < MATE_SCORE - 1000:
+            eval_score = self.brain.evaluate(board)
+            margin = 120 * depth  # Marge conservative: 120cp par profondeur
+            if eval_score - margin >= beta:
+                return eval_score
+
         moves = list(board.legal_moves)
         if not moves: return self.finish_game_score(board, ply)
         moves = self.orderer.order_moves(board, moves, depth, pv_move=tt_move)
@@ -223,23 +257,77 @@ class IterativeDeepeningSearch:
         best_score = -INFINITY
         best_move = None
         tt_flag = TTEntryType.UPPER
+        
+        # Évaluation statique pour Futility Pruning
+        static_eval = self.brain.evaluate(board) if not in_check else 0
+        
+        # Compteur de coups calmes pour Late Move Pruning
+        quiet_count = 0
 
         for i, move in enumerate(moves):
+            is_capture = board.is_capture(move)
+            is_promotion = move.promotion is not None
+            is_quiet = not is_capture and not is_promotion
+            
+            # Futility Pruning: élague les coups calmes qui ne peuvent améliorer alpha
+            # Formule de BoyChesser: eval + margin < alpha
+            if depth <= 3 and not in_check and is_quiet and best_score > -MATE_SCORE + 1000:
+                futility_margin = 200 * depth  # 200cp par profondeur
+                if static_eval + futility_margin < alpha:
+                    continue  # Skip ce coup
+            
+            # Late Move Pruning: arrête après N coups calmes
+            # Formule de BoyChesser: moveIdx > threshold(depth)
+            if depth <= 5 and not in_check and is_quiet and best_score > -MATE_SCORE + 1000:
+                # Seuil: plus on est profond, plus on peut chercher de coups
+                # depth 1: 7 coups, depth 2: 11, depth 3: 15, depth 4: 19, depth 5: 23
+                lmp_threshold = 3 + depth * depth
+                if quiet_count >= lmp_threshold:
+                    break  # Arrête la boucle de coups
+            
+            if is_quiet:
+                quiet_count += 1
+            
+            # Check Extension: étend si en échec (in_check calculé AVANT le coup)
+            # Passed Pawn Extension: étend si pion atteint 7ème/2ème rangée
+            extension = 0
+            if in_check:
+                extension = 1
+            else:
+                # Vérifier si c'est un coup de pion
+                piece = board.piece_at(move.from_square)
+                if piece and piece.piece_type == chess.PAWN:
+                    rank = chess.square_rank(move.to_square)
+                    # Blanc: pion sur rank 6 (7ème rangée, 0-indexed)
+                    # Noir: pion sur rank 1 (2ème rangée, 0-indexed)
+                    if (piece.color == chess.WHITE and rank == 6) or \
+                       (piece.color == chess.BLACK and rank == 1):
+                        extension = 1
+            
             board.push(move)
             
+            # Calcul de la nouvelle profondeur avec extension
+            new_depth = depth - 1 + extension
+            
+            # Late Move Reduction (LMR)
+            # Ne pas réduire si extension active
             reduction = 0
-            if self.config.use_late_move_reduction and i >= self.config.lmr_threshold and depth >= 3 and not in_check and not board.is_capture(move) and not move.promotion:
+            if self.config.use_late_move_reduction and i >= self.config.lmr_threshold and depth >= 3 and extension == 0 and not is_capture and not is_promotion:
                 reduction = 1
                 if i >= 6 and depth >= 4: reduction = 2
 
+            # Principal Variation Search (PVS)
             if i == 0:
-                score = -self.negamax(board, depth - 1, -beta, -alpha, ply + 1, True)
+                score = -self.negamax(board, new_depth, -beta, -alpha, ply + 1, True)
             else:
-                score = -self.negamax(board, depth - 1 - reduction, -alpha - 1, -alpha, ply + 1, True)
+                # Null Window Search avec réduction LMR
+                score = -self.negamax(board, new_depth - reduction, -alpha - 1, -alpha, ply + 1, True)
+                # Re-recherche si LMR a échoué
                 if score > alpha and reduction > 0:
-                    score = -self.negamax(board, depth - 1, -alpha-1, -alpha, ply+1, True)
+                    score = -self.negamax(board, new_depth, -alpha - 1, -alpha, ply + 1, True)
+                # Re-recherche complète si dans la fenêtre
                 if score > alpha and score < beta:
-                    score = -self.negamax(board, depth - 1, -beta, -alpha, ply + 1, True)
+                    score = -self.negamax(board, new_depth, -beta, -alpha, ply + 1, True)
             
             board.pop()
             if self.stop_flag: return 0
@@ -293,6 +381,12 @@ class IterativeDeepeningSearch:
         moves = self.orderer.order_moves(board, moves, 0)
 
         for move in moves:
+            # SEE Pruning: élague les captures avec échange négatif
+            # TinyHugeBot: "SEE forward pruning"
+            if not see(board, move, threshold=-100):
+                # Capture perdante (perd plus de 100cp), skip
+                continue
+            
             board.push(move)
             score = -self.quiescence(board, -beta, -alpha, ply + 1)
             board.pop()
@@ -322,7 +416,17 @@ class IterativeDeepeningSearch:
 
     def get_stats(self) -> dict:
         """Retourne les statistiques de la dernière recherche."""
-        stats = self.last_info.copy()
+        elapsed = time.time() - self.start_time
+        nps = int(self.nodes / (elapsed + 0.001))
+        
+        stats = {
+            "nodes": self.nodes,
+            "time": elapsed,
+            "nps": nps,
+            "depth": self.seldepth, # Using seldepth as max depth reached
+            "score": 0 # Placeholder, score is local to search
+        }
+        
         if hasattr(self, 'searcher') and self.searcher.tt:
             stats['tt_stats'] = self.searcher.tt.get_stats()
         elif self.tt:

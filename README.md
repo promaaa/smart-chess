@@ -1,53 +1,58 @@
 # SmartChess
 
-An intelligent electronic chessboard that automatically detects piece positions and allows you to play against a powerful AI opponent.
+Un échiquier électronique intelligent qui détecte automatiquement la position des pièces et vous permet de jouer contre un adversaire IA puissant.
 
-## Project Structure
+## Structure du Projet
 
-- `prototypes/`: Hardware designs (KiCad) and firmware for the physical chessboard.
-  - `8x8-maquette/firmware/IA-Marc/V2/`: Contains the main application and the AI engine.
-- `ai/`: Original research and development for the chess AI.
-- `docs/`: Project documentation.
+Le dépôt a été restructuré pour plus de clarté :
 
-## Quick Start
+- **`ai/`** : Recherche et développement originaux pour l'IA d'échecs.
+- **`documentation/`** : Documentation technique et spécifications du projet.
+- **`prototypes/`** : Conception matérielle et firmware.
+  - **`echiquier_8x8/`** : Prototype principal 8x8.
+    - `firmware/` : Code embarqué.
+      - `ia_marc/` : Moteurs d'IA (V1 et V2).
+      - `ia_embarquee/` : Scripts de jeu principaux (`chess_game_v1.py`, `chess_game_v2.py`).
+  - **`echiquier_2x2/`** : Prototype de test 2x2.
 
-This guide explains how to run the main chess application on a Raspberry Pi or a development machine.
+## Démarrage Rapide
 
-### 1. Setup
+Ce guide explique comment lancer l'application principale d'échecs sur un Raspberry Pi ou une machine de développement.
 
-First, set up a Python virtual environment and install the required dependencies.
+### 1. Installation
+
+Naviguez vers le répertoire de l'IA embarquée (V2) et installez les dépendances :
 
 ```bash
-# Navigate to the V2 AI directory
-cd prototypes/8x8-maquette/firmware/IA-Marc/V2/
+# Aller dans le répertoire de l'IA V2
+cd prototypes/echiquier_8x8/firmware/ia_marc/V2/
 
-# Create a virtual environment
+# Créer un environnement virtuel
 python3 -m venv venv
 
-# Activate the virtual environment
+# Activer l'environnement virtuel
 source venv/bin/activate
 
-# Install dependencies
+# Installer les dépendances
 pip install -r requirements.txt
 ```
 
-### 2. Running the Game
+### 2. Lancer le Jeu
 
-The main script allows you to play against the AI. It includes a menu to select the difficulty level.
+Le script principal vous permet de jouer contre l'IA avec un menu de sélection de difficulté.
 
 ```bash
-# From the V2 directory, run the menu-driven game script
-python3 chess_game_IA_menu.py
+# Aller dans le répertoire des scripts embarqués
+cd prototypes/echiquier_8x8/firmware/ia_embarquee/
+
+# Lancer le jeu (V2)
+python3 chess_game_v2.py
 ```
 
-### AI Difficulty Levels
+### Niveaux de Difficulté IA
 
-The AI has 9 difficulty levels, ranging from ELO 200 (Novice) to 1800 (Expert). You can select the level through the on-screen menu at the start of the game.
+L'IA propose 9 niveaux de difficulté, allant de ELO 200 (Novice) à 1800 (Expert).
 
-### Opening Book (Optional, for stronger AI)
+### Bibliothèque d'Ouvertures (Optionnel)
 
-For an even stronger AI, especially in the opening phase, you can download a Polyglot book file.
-Download `Cerebellum_Light.bin` (or a similar `.bin` book) from:
-[https://zipproth.de/Brainfish/download/](https://zipproth.de/Brainfish/download/)
-
-Place the downloaded `.bin` file into the `prototypes/8x8-maquette/firmware/IA-Marc/book/` directory.
+Pour une IA plus forte dans les ouvertures, téléchargez un fichier de livre Polyglot (ex: `Cerebellum_Light.bin`) et placez-le dans le répertoire `prototypes/echiquier_8x8/firmware/ia_marc/book/`.

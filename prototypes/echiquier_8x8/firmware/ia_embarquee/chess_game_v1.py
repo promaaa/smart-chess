@@ -15,6 +15,8 @@ import chess  # pip install chess
 
 # --- Importation de l'IA Maison ---
 try:
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V1"))
     from engine_brain import Engine
     from engine_search import Searcher
 

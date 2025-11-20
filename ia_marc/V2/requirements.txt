@@ -1,0 +1,5 @@
+chess
+psutil
+pytest
+pytest-benchmark
+matplotlib

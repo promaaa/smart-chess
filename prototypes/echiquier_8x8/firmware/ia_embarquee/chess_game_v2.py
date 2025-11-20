@@ -31,6 +31,8 @@ from adafruit_mcp230xx.mcp23017 import MCP23017
 
 # Import de la nouvelle IA
 try:
+    # Ajout du chemin vers le moteur IA
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
     from engine_main import ChessEngine
     NEW_AI_AVAILABLE = True
 except ImportError as e:

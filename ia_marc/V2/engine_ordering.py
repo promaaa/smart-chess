@@ -53,15 +53,17 @@ class KillerMoves:
 
     Principe: Si un coup a causé un cutoff dans une position, il a de bonnes
     chances de causer un cutoff dans des positions similaires à la même profondeur.
+    
+    Upgraded to 4 slots (from 2) inspired by TinyHugeBot for better move ordering.
     """
 
-    def __init__(self, max_depth: int = 64, slots_per_depth: int = 2):
+    def __init__(self, max_depth: int = 64, slots_per_depth: int = 4):
         """
         Initialise la table des killer moves.
 
         Args:
             max_depth: Profondeur maximale de recherche
-            slots_per_depth: Nombre de killers par profondeur (typiquement 2)
+            slots_per_depth: Nombre de killers par profondeur (maintenant 4)
         """
         self.max_depth = max_depth
         self.slots = slots_per_depth
@@ -80,12 +82,14 @@ class KillerMoves:
             return
 
         # Ne pas ajouter de doublons
-        if self.table[depth][0] == move:
-            return
+        for i in range(self.slots):
+            if self.table[depth][i] == move:
+                return
 
         # Décalage: le nouveau killer devient le premier
-        # L'ancien premier devient le second
-        self.table[depth][1] = self.table[depth][0]
+        # Les anciens sont décalés (FIFO)
+        for i in range(self.slots - 1, 0, -1):
+            self.table[depth][i] = self.table[depth][i - 1]
         self.table[depth][0] = move
 
     def is_killer(self, move: chess.Move, depth: int) -> int:
@@ -97,15 +101,15 @@ class KillerMoves:
             depth: Profondeur actuelle
 
         Returns:
-            0 si pas killer, 1 si killer primaire, 2 si killer secondaire
+            0 si pas killer, 1-4 selon le rang du killer (1 = meilleur)
         """
         if depth >= self.max_depth or depth < 0:
             return 0
 
-        if self.table[depth][0] == move:
-            return 1
-        if self.table[depth][1] == move:
-            return 2
+        for i in range(self.slots):
+            if self.table[depth][i] == move:
+                return i + 1  # Retourne 1, 2, 3, ou 4
+
         return 0
 
     def get_killers(self, depth: int) -> List[Optional[chess.Move]]:
@@ -206,6 +210,105 @@ class HistoryTable:
 
 
 # ============================================================================
+# CONTINUATION HISTORY
+# ============================================================================
+
+
+class ContinuationHistory:
+    """
+    Continuation History: maintient des statistiques basées sur des paires
+    de coups consécutifs (followup history).
+    
+    Structure: [prev_from][prev_to][curr_from][curr_to] = score
+    
+    Inspiré de TinyHugeBot et Stockfish. Améliore significativement le
+    move ordering en capturant les patterns tactiques.
+    """
+
+    def __init__(self):
+        """Initialise la table de continuation history."""
+        # Table 64x64x64x64 serait trop grande (16M entrées)
+        # On utilise une approximation: [from_sq*64 + to_sq] = score
+        # Taille: 4096 entrées (64*64)
+        self.table = [0 for _ in range(4096)]
+        self.max_score = 1
+
+    def _get_index(self, prev_move: Optional[chess.Move], curr_move: chess.Move) -> int:
+        """
+        Calcule l'index dans la table pour une paire de coups.
+        
+        Args:
+            prev_move: Coup précédent (peut être None)
+            curr_move: Coup actuel
+            
+        Returns:
+            Index dans la table
+        """
+        if prev_move is None:
+            # Pas de coup précédent, utiliser seulement le coup actuel
+            return curr_move.from_square * 64 + curr_move.to_square
+        
+        # Combiner les deux coups: XOR pour mixer
+        prev_idx = prev_move.from_square * 64 + prev_move.to_square
+        curr_idx = curr_move.from_square * 64 + curr_move.to_square
+        return (prev_idx ^ curr_idx) & 0xFFF  # Masque pour 4096 entrées
+
+    def update(self, prev_move: Optional[chess.Move], curr_move: chess.Move, 
+               depth: int, caused_cutoff: bool = True):
+        """
+        Met à jour l'historique de continuation.
+        
+        Args:
+            prev_move: Coup précédent
+            curr_move: Coup actuel
+            depth: Profondeur
+            caused_cutoff: True si le coup a causé un cutoff
+        """
+        idx = self._get_index(prev_move, curr_move)
+        
+        if caused_cutoff:
+            bonus = depth * depth
+            self.table[idx] += bonus
+            if self.table[idx] > self.max_score:
+                self.max_score = self.table[idx]
+        else:
+            penalty = depth
+            self.table[idx] -= penalty
+            if self.table[idx] < 0:
+                self.table[idx] = 0
+
+    def get_score(self, prev_move: Optional[chess.Move], curr_move: chess.Move) -> int:
+        """
+        Retourne le score de continuation pour une paire de coups.
+        
+        Args:
+            prev_move: Coup précédent
+            curr_move: Coup actuel
+            
+        Returns:
+            Score de continuation
+        """
+        idx = self._get_index(prev_move, curr_move)
+        return self.table[idx]
+
+    def clear(self):
+        """Réinitialise toute la table."""
+        self.table = [0 for _ in range(4096)]
+        self.max_score = 1
+
+    def age(self, factor: float = 0.9):
+        """
+        Vieillit les scores.
+        
+        Args:
+            factor: Facteur de vieillissement
+        """
+        for i in range(4096):
+            self.table[i] = int(self.table[i] * factor)
+        self.max_score = int(self.max_score * factor)
+
+
+# ============================================================================
 # MOVE ORDERING
 # ============================================================================
 
@@ -216,16 +319,17 @@ class MoveOrderer:
     Combine toutes les heuristiques pour trier les coups optimalement.
     """
 
-    def __init__(self, max_depth: int = 64, killer_slots: int = 2):
+    def __init__(self, max_depth: int = 64, killer_slots: int = 4):
         """
         Initialise le move orderer.
 
         Args:
             max_depth: Profondeur maximale
-            killer_slots: Nombre de killers par profondeur
+            killer_slots: Nombre de killers par profondeur (4 par défaut)
         """
         self.killers = KillerMoves(max_depth, killer_slots)
         self.history = HistoryTable()
+        self.continuation_history = ContinuationHistory()
 
     def score_move(
         self,
@@ -233,6 +337,7 @@ class MoveOrderer:
         move: chess.Move,
         depth: int,
         pv_move: Optional[chess.Move] = None,
+        prev_move: Optional[chess.Move] = None,
     ) -> int:
         """
         Attribue un score à un coup pour le tri.
@@ -243,6 +348,7 @@ class MoveOrderer:
             move: Coup à scorer
             depth: Profondeur actuelle
             pv_move: Coup de la variation principale (TT)
+            prev_move: Coup précédent (pour continuation history)
 
         Returns:
             Score du coup
@@ -259,20 +365,26 @@ class MoveOrderer:
         if move.promotion:
             return SCORE_PROMOTION + PIECE_VALUES.get(move.promotion, 0)
 
-        # 4. Killer Moves
+        # 4. Killer Moves (4 slots avec scores décroissants)
         killer_rank = self.killers.is_killer(move, depth)
         if killer_rank == 1:
             return SCORE_KILLER_1
         elif killer_rank == 2:
             return SCORE_KILLER_2
+        elif killer_rank == 3:
+            return SCORE_KILLER_2 - 100000  # Killer 3
+        elif killer_rank == 4:
+            return SCORE_KILLER_2 - 200000  # Killer 4
 
         # 5. Roque
         if board.is_castling(move):
             return SCORE_CASTLING
 
-        # 6. History Heuristic
+        # 6. History Heuristic + Continuation History
         history_score = self.history.get_score(move)
-        return history_score
+        continuation_score = self.continuation_history.get_score(prev_move, move)
+        # Combiner les deux scores (continuation history a plus de poids)
+        return history_score + continuation_score * 2
 
     def _score_capture(self, board: chess.Board, move: chess.Move) -> int:
         """
@@ -312,6 +424,7 @@ class MoveOrderer:
         moves: List[chess.Move],
         depth: int,
         pv_move: Optional[chess.Move] = None,
+        prev_move: Optional[chess.Move] = None,
     ) -> List[chess.Move]:
         """
         Trie une liste de coups selon leur score.
@@ -321,13 +434,14 @@ class MoveOrderer:
             moves: Liste des coups à trier
             depth: Profondeur actuelle
             pv_move: Coup de la variation principale
+            prev_move: Coup précédent (pour continuation history)
 
         Returns:
             Liste triée des coups (meilleurs en premier)
         """
         # Scorer tous les coups
         scored_moves = [
-            (move, self.score_move(board, move, depth, pv_move)) for move in moves
+            (move, self.score_move(board, move, depth, pv_move, prev_move)) for move in moves
         ]
 
         # Trier par score décroissant
@@ -336,7 +450,7 @@ class MoveOrderer:
         # Retourner seulement les coups
         return [move for move, score in scored_moves]
 
-    def update_history(self, move: chess.Move, depth: int, caused_cutoff: bool = True):
+    def update_history(self, move: chess.Move, depth: int, caused_cutoff: bool = True, prev_move: Optional[chess.Move] = None):
         """
         Met à jour l'historique après un coup.
 
@@ -344,8 +458,10 @@ class MoveOrderer:
             move: Coup joué
             depth: Profondeur
             caused_cutoff: True si beta cutoff
+            prev_move: Coup précédent (pour continuation history)
         """
         self.history.update(move, depth, caused_cutoff)
+        self.continuation_history.update(prev_move, move, depth, caused_cutoff)
 
     def add_killer(self, move: chess.Move, depth: int):
         """
@@ -361,6 +477,7 @@ class MoveOrderer:
         """Réinitialise toutes les tables."""
         self.killers.clear()
         self.history.clear()
+        self.continuation_history.clear()
 
     def age_history(self, factor: float = 0.9):
         """
@@ -370,6 +487,7 @@ class MoveOrderer:
             factor: Facteur de vieillissement
         """
         self.history.age(factor)
+        self.continuation_history.age(factor)
 
 
 # ============================================================================
