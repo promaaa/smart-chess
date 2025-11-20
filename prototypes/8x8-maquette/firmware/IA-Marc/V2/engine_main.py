@@ -87,6 +87,7 @@ class ChessEngine:
                 bonus_pawn_structure=personality.bonus_pawn_structure,
                 bonus_king_safety=personality.bonus_king_safety,
                 bonus_center=personality.bonus_center,
+                contempt=self.config.difficulty_level.contempt,
                 use_mobility=self.config.eval_mobility,
                 use_pawn_structure=self.config.eval_pawn_structure,
                 use_king_safety=self.config.eval_king_safety,
@@ -112,13 +113,26 @@ class ChessEngine:
         Returns:
             OpeningBook ou None
         """
-        # Essayer d'abord le livre Polyglot (Cerebellum_Light.bin)
+        # Essayer d'abord Cerebellum (full) pour la meilleure qualité, puis Light
         polyglot_paths = [
+            # Cerebellum (full) - 800MB, 2M+ positions - BEST
+            "../book/Cerebellum.bin",
+            "book/Cerebellum.bin",
+            "../IA-Marc/book/Cerebellum.bin",
+            # Cerebellum3Merge - 170MB, excellent quality
+            "../book/Cerebellum3Merge.bin",
+            "book/Cerebellum3Merge.bin",
+            "../IA-Marc/book/Cerebellum3Merge.bin",
+            # Chemins absolus pour exécution depuis ai_comparison/
+            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum.bin",
+            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum3Merge.bin",
+            # Cerebellum Light - 157MB, 500k+ positions - EXCELLENT
             "../book/Cerebellum_Light.bin",
             "book/Cerebellum_Light.bin",
             "../IA-Marc/book/Cerebellum_Light.bin",
             "../prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
             "/Users/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
+            "/home/promaa/Documents/code/smart-chess/prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin",
         ]
 
         for path in polyglot_paths:
@@ -189,6 +203,7 @@ class ChessEngine:
                 bonus_pawn_structure=personality.bonus_pawn_structure,
                 bonus_king_safety=personality.bonus_king_safety,
                 bonus_center=personality.bonus_center,
+                contempt=self.config.difficulty_level.contempt,
             )
 
             logger.info(f"Personnalité changée: {self.config.personality.name}")

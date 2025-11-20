@@ -904,6 +904,9 @@ class EvaluationEngine:
         self.bonus_pawn_structure = 10
         self.bonus_king_safety = 10
         self.bonus_center = 5
+        
+        # Facteur de mépris pour les nulles
+        self._contempt = 0
 
         # Flags d'activation
         self.use_mobility = True
@@ -922,6 +925,7 @@ class EvaluationEngine:
             bonus_pawn_structure: Bonus pour la structure de pions
             bonus_king_safety: Bonus pour la sécurité du roi
             bonus_center: Bonus pour le contrôle du centre
+            contempt: Facteur de mépris pour les nulles (0-50)
             use_mobility: Activer l'évaluation de mobilité
             use_pawn_structure: Activer l'évaluation de structure
             use_king_safety: Activer l'évaluation de sécurité du roi
@@ -946,7 +950,10 @@ class EvaluationEngine:
             return -99999 if board.turn == chess.WHITE else 99999
 
         if board.is_insufficient_material() or board.is_stalemate():
-            return 0
+            # Appliquer le contempt: une nulle est considérée comme légèrement défavorable
+            # Cela encourage le moteur à éviter les nulles sauf si nécessaire
+            contempt = getattr(self, '_contempt', 0)
+            return -contempt
 
         # Score de base (matériel + PST)
         mg_score, eg_score, phase = self._evaluate_material_pst(board)

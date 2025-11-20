@@ -269,10 +269,18 @@ class IterativeDeepeningSearch:
         return alpha
 
     def finish_game_score(self, board: chess.Board, ply: int) -> int:
-        """Retourne le score de fin de partie (Mat ou Pat)."""
+        """Retourne le score de fin de partie (Mat ou Pat).
+        
+        Applique le facteur de mépris (contempt) pour les nulles.
+        Un contempt > 0 rend le moteur plus ambitieux (évite les nulles).
+        """
         if board.is_checkmate():
             return -MATE_SCORE + ply # Mat plus rapide est meilleur
-        return 0 # Pat ou match nul
+        
+        # Appliquer le contempt pour les nulles (pat, matériel insuffisant, etc.)
+        # Score négatif = le moteur considère la nulle comme désavantageuse
+        contempt = self.config.difficulty_level.contempt
+        return -contempt # Pat ou match nul
 
     def check_time(self):
         """Vérifie si le temps est écoulé."""

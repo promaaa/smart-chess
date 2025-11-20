@@ -14,8 +14,7 @@ Le fichier `Cerebellum_Light.bin` fait 157 MB, ce qui dépasse la limite de 100 
 
 Téléchargez le fichier depuis l'une de ces sources :
 
-- **Source principale** : https://github.com/dshawul/nn-train/tree/master/books
-- **Mirror** : https://sites.google.com/site/computerschess/home/opening-books
+- **Source principale** : https://zipproth.de/Brainfish/download/
 
 Placez le fichier téléchargé dans ce dossier :
 ```
