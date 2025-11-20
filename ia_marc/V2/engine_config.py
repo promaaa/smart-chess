@@ -98,6 +98,24 @@ DIFFICULTY_LEVELS = {
         error_rate=0.0, use_opening_book=True, contempt=25, reduction_factor=1.0,
         random_move_chance=0.0, blunder_threshold=50, time_variance=0.0
     ),
+    # NIVEAU 10: ELO 2000
+    "LEVEL10": DifficultyLevel(
+        name="Niveau 10 (Expert)", elo=2000, depth_limit=8, time_limit=8.0,
+        error_rate=0.0, use_opening_book=True, contempt=30, reduction_factor=1.0,
+        random_move_chance=0.0, blunder_threshold=25, time_variance=0.0
+    ),
+    # NIVEAU 11: ELO 2200
+    "LEVEL11": DifficultyLevel(
+        name="Niveau 11 (Maître)", elo=2200, depth_limit=10, time_limit=15.0,
+        error_rate=0.0, use_opening_book=True, contempt=35, reduction_factor=1.0,
+        random_move_chance=0.0, blunder_threshold=0, time_variance=0.0
+    ),
+    # NIVEAU 12: ELO 2400
+    "LEVEL12": DifficultyLevel(
+        name="Niveau 12 (Maximum)", elo=2400, depth_limit=20, time_limit=30.0,
+        error_rate=0.0, use_opening_book=True, contempt=40, reduction_factor=1.0,
+        random_move_chance=0.0, blunder_threshold=0, time_variance=0.0
+    ),
 }
 
 

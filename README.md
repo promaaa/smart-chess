@@ -7,13 +7,14 @@ Un échiquier électronique intelligent qui détecte automatiquement la position
 Le dépôt a été restructuré pour plus de clarté :
 
 - **`ai/`** : Recherche et développement originaux pour l'IA d'échecs.
-- **`documentation/`** : Documentation technique et spécifications du projet.
+- **`ia_marc/`** : Moteurs d'IA (V1 et V2), avec livre d'ouvertures.
 - **`prototypes/`** : Conception matérielle et firmware.
   - **`echiquier_8x8/`** : Prototype principal 8x8.
     - `firmware/` : Code embarqué.
-      - `ia_marc/` : Moteurs d'IA (V1 et V2).
       - `ia_embarquee/` : Scripts de jeu principaux (`chess_game_v1.py`, `chess_game_v2.py`).
+    - `hardware/` : Schémas et PCB KiCad.
   - **`echiquier_2x2/`** : Prototype de test 2x2.
+
 
 ## Démarrage Rapide
 
@@ -25,7 +26,7 @@ Naviguez vers le répertoire de l'IA embarquée (V2) et installez les dépendanc
 
 ```bash
 # Aller dans le répertoire de l'IA V2
-cd prototypes/echiquier_8x8/firmware/ia_marc/V2/
+cd ia_marc/V2/
 
 # Créer un environnement virtuel
 python3 -m venv venv
@@ -44,6 +45,7 @@ Le script principal vous permet de jouer contre l'IA avec un menu de sélection 
 ```bash
 # Aller dans le répertoire des scripts embarqués
 cd prototypes/echiquier_8x8/firmware/ia_embarquee/
+    - `hardware/` : Schémas et PCB KiCad.
 
 # Lancer le jeu (V2)
 python3 chess_game_v2.py
@@ -55,4 +57,4 @@ L'IA propose 9 niveaux de difficulté, allant de ELO 200 (Novice) à 1800 (Exper
 
 ### Bibliothèque d'Ouvertures (Optionnel)
 
-Pour une IA plus forte dans les ouvertures, téléchargez un fichier de livre Polyglot (ex: `Cerebellum_Light.bin`) et placez-le dans le répertoire `prototypes/echiquier_8x8/firmware/ia_marc/book/`.
+Pour une IA plus forte dans les ouvertures, téléchargez un fichier de livre Polyglot (ex: `Cerebellum_Light.bin`) et placez-le dans le répertoire `ia_marc/book/`.

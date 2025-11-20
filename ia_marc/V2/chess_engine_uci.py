@@ -241,8 +241,7 @@ class UCIEngine:
 
 def main():
     """Point d'entrée principal."""
-    sys.stdin.reconfigure(line_buffering=True)
-    sys.stdout.reconfigure(line_buffering=True)
+
     engine = UCIEngine()
     engine.run()
 
