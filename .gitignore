@@ -124,6 +124,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+GEMINI.md
 
 # Temporary files
 *.tmp
