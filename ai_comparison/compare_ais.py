@@ -252,7 +252,7 @@ def play_match(white_player="new", black_player="old", max_moves=200):
     print("PARTIE TERMINEE")
     print(f"Resultat: {board.result()}")
 
-    return old_stats, new_stats
+    return old_stats, new_stats, board.result()
 
 
 def print_performance_report(old_stats, new_stats, current_platform):
@@ -339,16 +339,69 @@ def main():
     # Détecter la plateforme
     current_platform = detect_platform()
 
-    # Jouer une partie
-    old_stats, new_stats = play_match(
-        white_player="old", black_player="new", max_moves=200
-    )
+    # Configuration du match
+    num_games = 4
+    wins_new = 0
+    wins_old = 0
+    draws = 0
+    
+    total_old_stats = PerformanceStats("Old AI (Total)")
+    total_new_stats = PerformanceStats("New AI (Total)")
 
-    if old_stats and new_stats:
-        print_performance_report(old_stats, new_stats, current_platform)
+    print(f"Lancement de {num_games} parties pour une comparaison fiable...")
+
+    for i in range(num_games):
+        # Alternance des couleurs
+        if i % 2 == 0:
+            white = "new"
+            black = "old"
+        else:
+            white = "old"
+            black = "new"
+            
+        print(f"\n--- Partie {i+1}/{num_games} ({white} vs {black}) ---")
+        
+        old_stats, new_stats, result = play_match(
+            white_player=white, black_player=black, max_moves=200
+        )
+
+        if old_stats and new_stats:
+            # Agrégation des stats
+            total_old_stats.times.extend(old_stats.times)
+            total_old_stats.moves += old_stats.moves
+            total_old_stats.errors += old_stats.errors
+            
+            total_new_stats.times.extend(new_stats.times)
+            total_new_stats.moves += new_stats.moves
+            total_new_stats.errors += new_stats.errors
+            
+            # Suivi des victoires
+            if result == "1-0":
+                if white == "new":
+                    wins_new += 1
+                else:
+                    wins_old += 1
+            elif result == "0-1":
+                if black == "new":
+                    wins_new += 1
+                else:
+                    wins_old += 1
+            else:
+                draws += 1
+
+    # Affichage du rapport global
+    print("\n" + "=" * 70)
+    print("RÉSULTATS AGRÉGÉS")
+    print("=" * 70)
+    print(f"Score Final sur {num_games} parties:")
+    print(f"  New AI (IA-Marc V2) : {wins_new} victoires")
+    print(f"  Old AI              : {wins_old} victoires")
+    print(f"  Nuls                : {draws}")
+    
+    print_performance_report(total_old_stats, total_new_stats, current_platform)
 
     print("\n" + "=" * 70)
-    print("Comparaison terminee")
+    print("Comparaison terminée")
     print("=" * 70)
 
 
