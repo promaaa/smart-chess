@@ -43,78 +43,58 @@ class DifficultyLevel:
 
 
 # Définition de tous les niveaux
+# Basé sur les résultats du benchmark: IA-Marc V2 atteint ~1650-1700 ELO maximum
 DIFFICULTY_LEVELS = {
-    # NIVEAU 1: ELO 200
+    # NIVEAU 1: ELO 400 - Débutant complet
     "LEVEL1": DifficultyLevel(
-        name="Niveau 1 (Novice)", elo=200, depth_limit=1, time_limit=0.1,
-        error_rate=0.8, use_opening_book=False, contempt=0, reduction_factor=0.5,
-        random_move_chance=0.5, blunder_threshold=800, time_variance=0.5
+        name="Niveau 1 (Débutant)", elo=400, depth_limit=1, time_limit=0.2,
+        error_rate=0.7, use_opening_book=False, contempt=0, reduction_factor=0.5,
+        random_move_chance=0.4, blunder_threshold=700, time_variance=0.5
     ),
-    # NIVEAU 2: ELO 400
+    # NIVEAU 2: ELO 600 - Novice
     "LEVEL2": DifficultyLevel(
-        name="Niveau 2 (Débutant)", elo=400, depth_limit=1, time_limit=0.2,
-        error_rate=0.6, use_opening_book=False, contempt=0, reduction_factor=0.5,
-        random_move_chance=0.3, blunder_threshold=600, time_variance=0.4
+        name="Niveau 2 (Novice)", elo=600, depth_limit=2, time_limit=0.5,
+        error_rate=0.5, use_opening_book=False, contempt=0, reduction_factor=0.6,
+        random_move_chance=0.25, blunder_threshold=500, time_variance=0.4
     ),
-    # NIVEAU 3: ELO 600
+    # NIVEAU 3: ELO 800 - Joueur occasionnel
     "LEVEL3": DifficultyLevel(
-        name="Niveau 3", elo=600, depth_limit=2, time_limit=0.3,
-        error_rate=0.4, use_opening_book=False, contempt=0, reduction_factor=0.6,
-        random_move_chance=0.2, blunder_threshold=500, time_variance=0.3
+        name="Niveau 3 (Occasionnel)", elo=800, depth_limit=2, time_limit=0.8,
+        error_rate=0.3, use_opening_book=True, contempt=0, reduction_factor=0.7,
+        random_move_chance=0.15, blunder_threshold=400, time_variance=0.3
     ),
-    # NIVEAU 4: ELO 800
+    # NIVEAU 4: ELO 1000 - Amateur
     "LEVEL4": DifficultyLevel(
-        name="Niveau 4", elo=800, depth_limit=2, time_limit=0.5,
-        error_rate=0.3, use_opening_book=True, contempt=0, reduction_factor=0.6,
-        random_move_chance=0.1, blunder_threshold=400, time_variance=0.2
+        name="Niveau 4 (Amateur)", elo=1000, depth_limit=3, time_limit=1.2,
+        error_rate=0.2, use_opening_book=True, contempt=5, reduction_factor=0.75,
+        random_move_chance=0.08, blunder_threshold=300, time_variance=0.2
     ),
-    # NIVEAU 5: ELO 1000
+    # NIVEAU 5: ELO 1200 - Joueur de club débutant
     "LEVEL5": DifficultyLevel(
-        name="Niveau 5 (Amateur)", elo=1000, depth_limit=3, time_limit=1.0,
-        error_rate=0.2, use_opening_book=True, contempt=5, reduction_factor=0.7,
-        random_move_chance=0.05, blunder_threshold=300, time_variance=0.15
+        name="Niveau 5 (Club débutant)", elo=1200, depth_limit=4, time_limit=2.0,
+        error_rate=0.1, use_opening_book=True, contempt=10, reduction_factor=0.8,
+        random_move_chance=0.03, blunder_threshold=200, time_variance=0.15
     ),
-    # NIVEAU 6: ELO 1200
+    # NIVEAU 6: ELO 1400 - Joueur de club intermédiaire
+    # Benchmark: 4 victoires / 0 défaites contre Stockfish 1400
     "LEVEL6": DifficultyLevel(
-        name="Niveau 6", elo=1200, depth_limit=3, time_limit=1.5,
-        error_rate=0.1, use_opening_book=True, contempt=10, reduction_factor=0.7,
-        random_move_chance=0.02, blunder_threshold=200, time_variance=0.1
+        name="Niveau 6 (Club intermédiaire)", elo=1400, depth_limit=5, time_limit=3.0,
+        error_rate=0.05, use_opening_book=True, contempt=15, reduction_factor=0.85,
+        random_move_chance=0.0, blunder_threshold=150, time_variance=0.1
     ),
-    # NIVEAU 7: ELO 1400
+    # NIVEAU 7: ELO 1600 - Joueur de club avancé
+    # Benchmark: 3 victoires / 1 défaite contre Stockfish 1600
     "LEVEL7": DifficultyLevel(
-        name="Niveau 7 (Club)", elo=1400, depth_limit=4, time_limit=2.0,
-        error_rate=0.05, use_opening_book=True, contempt=15, reduction_factor=0.8,
-        random_move_chance=0.0, blunder_threshold=150, time_variance=0.05
-    ),
-    # NIVEAU 8: ELO 1600
-    "LEVEL8": DifficultyLevel(
-        name="Niveau 8", elo=1600, depth_limit=5, time_limit=3.0,
+        name="Niveau 7 (Club avancé)", elo=1600, depth_limit=6, time_limit=4.0,
         error_rate=0.02, use_opening_book=True, contempt=20, reduction_factor=0.9,
-        random_move_chance=0.0, blunder_threshold=100, time_variance=0.02
+        random_move_chance=0.0, blunder_threshold=100, time_variance=0.05
     ),
-    # NIVEAU 9: ELO 1800
-    "LEVEL9": DifficultyLevel(
-        name="Niveau 9 (Expert)", elo=1800, depth_limit=6, time_limit=4.0,
+    # NIVEAU 8: ELO 1700 - Maximum (Force optimale de l'IA)
+    # Benchmark: Performance entre 1600 et 1800, estimé à ~1650-1700
+    "LEVEL8": DifficultyLevel(
+        name="Niveau 8 (Maximum)", elo=1700, depth_limit=8, time_limit=5.0,
         error_rate=0.0, use_opening_book=True, contempt=25, reduction_factor=1.0,
         random_move_chance=0.0, blunder_threshold=50, time_variance=0.0
-    ),
-    # NIVEAU 10: ELO 2000
-    "LEVEL10": DifficultyLevel(
-        name="Niveau 10 (Expert)", elo=2000, depth_limit=8, time_limit=8.0,
-        error_rate=0.0, use_opening_book=True, contempt=30, reduction_factor=1.0,
-        random_move_chance=0.0, blunder_threshold=25, time_variance=0.0
-    ),
-    # NIVEAU 11: ELO 2200
-    "LEVEL11": DifficultyLevel(
-        name="Niveau 11 (Maître)", elo=2200, depth_limit=10, time_limit=15.0,
-        error_rate=0.0, use_opening_book=True, contempt=35, reduction_factor=1.0,
-        random_move_chance=0.0, blunder_threshold=0, time_variance=0.0
-    ),
-    # NIVEAU 12: ELO 2400
-    "LEVEL12": DifficultyLevel(
-        name="Niveau 12 (Maximum)", elo=2400, depth_limit=20, time_limit=30.0,
-        error_rate=0.0, use_opening_book=True, contempt=40, reduction_factor=1.0,
-        random_move_chance=0.0, blunder_threshold=0, time_variance=0.0
     ),
 }
 

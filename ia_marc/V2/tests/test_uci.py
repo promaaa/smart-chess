@@ -13,6 +13,7 @@ Usage:
 import subprocess
 import sys
 import time
+import os
 from typing import List, Optional, Tuple
 
 
@@ -20,7 +21,7 @@ class UCITester:
     """Classe pour tester le moteur UCI via subprocess."""
 
     def __init__(
-        self, engine_path: str = "chess_engine_uci.py", use_pypy: bool = False
+        self, engine_path: str = None, use_pypy: bool = False
     ):
         """
         Initialise le testeur UCI.
@@ -29,7 +30,11 @@ class UCITester:
             engine_path: Chemin vers le moteur UCI
             use_pypy: Utiliser PyPy3 au lieu de Python3
         """
-        self.engine_path = engine_path
+        if engine_path is None:
+            # Construct path relative to this script file
+            self.engine_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'chess_engine_uci.py'))
+        else:
+            self.engine_path = engine_path
         self.use_pypy = use_pypy
         self.process = None
 
