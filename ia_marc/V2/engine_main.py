@@ -415,6 +415,7 @@ class ChessEngine:
             enable: True pour activer, False pour désactiver
         """
         self.use_opening_book = enable
+        self.config.use_opening_book = enable
         logger.info(f"Livre d'ouvertures: {'activé' if enable else 'désactivé'}")
 
     def set_opening_book(self, book_path: str, book_type: str = "auto"):
