@@ -5,3 +5,5 @@ chess
 gpiozero
 RPi.GPIO
 spidev
+Pillow
+adafruit-circuitpython-rgb-display

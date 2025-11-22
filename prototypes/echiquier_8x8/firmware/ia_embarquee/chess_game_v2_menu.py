@@ -1,47 +1,85 @@
 #!/usr/bin/env python3
 """
-Script de jeu d'échecs avec l'IA-Marc V2 sur matériel réel.
-===========================================================
+Script de jeu d'échecs avec l'IA-Marc V2 sur matériel réel + Menu sur écran 2.8".
+=================================================================================
 
-Basé sur chess_game_SF.py, mais utilise le moteur IA-Marc V2
-au lieu de Stockfish.
+Basé sur chess_game_v2.py.
+Ajoute un menu de sélection de niveau via un écran LCD 2.8" et un potentiomètre (encodeur rotatif).
 
 Fonctionnalités :
-- Détection des mouvements via capteurs Hall (MCP23017)
-- Affichage des coups via LEDs (HT16K33)
-- Intégration de l'IA-Marc V2 pour les Noirs
-- Gestion du capteur défectueux d7
+- Menu graphique pour choisir le niveau de l'IA.
+- Navigation via encodeur rotatif (rotation + clic).
+- Détection des mouvements via capteurs Hall (MCP23017).
+- Affichage des coups via LEDs (HT16K33).
+- Intégration de l'IA-Marc V2.
+
+Matériel requis :
+- Échiquier connecté en I2C (MCP23017, HT16K33).
+- Écran LCD 2.8" (ex: ILI9341) connecté en SPI.
+- Encodeur rotatif connecté en GPIO.
 """
 
 import os
 import sys
 import time
 import traceback
+import threading
 
-# Ajout du chemin courant pour les imports locaux si nécessaire
+# Ajout du chemin courant pour les imports locaux
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# --- Imports Matériel Échiquier ---
 import adafruit_tca9548a
 import board
 import busio
-import chess
 import digitalio
+import chess
 from adafruit_ht16k33.matrix import Matrix16x8
 from adafruit_mcp230xx.mcp23017 import MCP23017
 
-# Import de la nouvelle IA
+# --- Imports Matériel Menu (Écran + Encodeur) ---
 try:
-    # Ajout du chemin vers le moteur IA
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+    from PIL import Image, ImageDraw, ImageFont
+    import adafruit_rgb_display.ili9341 as ili9341
+    from gpiozero import RotaryEncoder, Button
+    MENU_HARDWARE_AVAILABLE = True
+except ImportError as e:
+    print(f"ATTENTION: Bibliothèques menu manquantes ({e}). Mode sans écran.")
+    MENU_HARDWARE_AVAILABLE = False
+
+# --- Import de l'IA ---
+try:
+    # Ajout du chemin vers le moteur IA (Racine du projet)
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V2"))
     from engine_main import ChessEngine
+    from engine_config import DIFFICULTY_LEVELS
     NEW_AI_AVAILABLE = True
 except ImportError as e:
-    print(f"ERREUR CRITIQUE: Impossible d'importer l'IA-Marc V2: {e}")
-    NEW_AI_AVAILABLE = False
+    # Fallback: Essayer le chemin local si le dossier a été déplacé dans firmware
+    try:
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+        from engine_main import ChessEngine
+        from engine_config import DIFFICULTY_LEVELS
+        NEW_AI_AVAILABLE = True
+    except ImportError as e2:
+        print(f"ERREUR CRITIQUE: Impossible d'importer l'IA-Marc V2: {e} / {e2}")
+        NEW_AI_AVAILABLE = False
+
+
+# --- CONFIGURATION PINS (À ADAPTER) ---
+# Écran SPI
+CS_PIN = digitalio.DigitalInOut(board.CE0)
+DC_PIN = digitalio.DigitalInOut(board.D25)
+RST_PIN = digitalio.DigitalInOut(board.D27)
+BAUDRATE = 24000000
+
+# Encodeur Rotatif (GPIO BCM)
+ENC_CLK = 17
+ENC_DT = 27
+ENC_SW = 22
 
 
 # --- DÉBUT DE LA TABLE DE TRADUCTION (LED_MAP) ---
-# Copié depuis chess_game_SF.py
 LED_MAP = {
     # Données du Canal 4 (Matrice 8x8)
     (8, 0): ("C4", 0, 0), (7, 0): ("C4", 0, 1), (6, 0): ("C4", 0, 2), (5, 0): ("C4", 0, 3),
@@ -69,6 +107,120 @@ LED_MAP = {
     (0, 3): ("C5", 1, 3), (0, 2): ("C5", 1, 2), (0, 1): ("C5", 1, 1), (0, 0): ("C5", 1, 0),
 }
 # --- FIN DE LA TABLE DE TRADUCTION ---
+
+
+class GameMenu:
+    """Gère l'affichage du menu et la sélection du niveau."""
+    
+    def __init__(self):
+        if not MENU_HARDWARE_AVAILABLE:
+            print("Mode simulation menu (console)")
+            return
+
+        # Init Écran
+        spi = busio.SPI(clock=board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+        self.disp = ili9341.ILI9341(spi, rotation=90, cs=CS_PIN, dc=DC_PIN, rst=RST_PIN, baudrate=BAUDRATE)
+        
+        # Init Encodeur
+        self.encoder = RotaryEncoder(ENC_CLK, ENC_DT, max_steps=0)
+        self.button = Button(ENC_SW)
+        
+        # Init Buffer Image
+        self.width = self.disp.width
+        self.height = self.disp.height
+        self.image = Image.new("RGB", (self.width, self.height))
+        self.draw = ImageDraw.Draw(self.image)
+        
+        # Fonts (Chargement par défaut si échec)
+        try:
+            self.font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+            self.font_item = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        except IOError:
+            self.font_title = ImageFont.load_default()
+            self.font_item = ImageFont.load_default()
+
+        # Niveaux disponibles
+        self.levels = list(DIFFICULTY_LEVELS.keys())
+        self.levels.sort() # S'assurer de l'ordre
+        self.selected_index = 0
+        self.last_index = -1
+        
+    def draw_menu(self):
+        """Dessine le menu sur l'écran."""
+        if not MENU_HARDWARE_AVAILABLE:
+            return
+
+        # Fond noir
+        self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
+        
+        # Titre
+        self.draw.text((10, 10), "SMART CHESS", font=self.font_title, fill="#FFFFFF")
+        self.draw.text((10, 40), "Choisissez le niveau :", font=self.font_item, fill="#AAAAAA")
+        
+        # Liste des niveaux (fenêtre glissante si besoin, ici simple)
+        start_y = 70
+        item_height = 25
+        
+        # On affiche 5 items autour de la sélection
+        display_range = 5
+        start_index = max(0, min(self.selected_index - 2, len(self.levels) - display_range))
+        
+        for i in range(start_index, min(start_index + display_range, len(self.levels))):
+            level_key = self.levels[i]
+            level_data = DIFFICULTY_LEVELS[level_key]
+            y = start_y + (i - start_index) * item_height
+            
+            if i == self.selected_index:
+                # Surlignage
+                self.draw.rectangle((0, y, self.width, y + item_height), fill="#00FF00")
+                text_color = "#000000"
+                prefix = "> "
+            else:
+                text_color = "#FFFFFF"
+                prefix = "  "
+                
+            text = f"{prefix}{level_data.name} ({level_data.elo})"
+            self.draw.text((10, y), text, font=self.font_item, fill=text_color)
+            
+        self.disp.image(self.image)
+
+    def run(self):
+        """Boucle principale du menu."""
+        if not MENU_HARDWARE_AVAILABLE:
+            # Fallback console
+            print("--- MENU CONSOLE ---")
+            for i, l in enumerate(self.levels):
+                print(f"{i}: {l}")
+            try:
+                idx = int(input("Choix (0-7): "))
+                return self.levels[idx]
+            except:
+                return "LEVEL7"
+
+        print("Affichage du menu...")
+        self.draw_menu()
+        
+        last_steps = 0
+        
+        while True:
+            # Lecture encodeur
+            steps = self.encoder.steps
+            if steps != last_steps:
+                diff = steps - last_steps
+                self.selected_index = (self.selected_index + diff) % len(self.levels)
+                last_steps = steps
+                self.draw_menu()
+            
+            # Lecture bouton
+            if self.button.is_pressed:
+                print(f"Niveau sélectionné : {self.levels[self.selected_index]}")
+                # Petit effet visuel de confirmation
+                self.draw.rectangle((0, 0, self.width, self.height), fill="#00FF00")
+                self.disp.image(self.image)
+                time.sleep(0.5)
+                return self.levels[self.selected_index]
+            
+            time.sleep(0.05)
 
 
 def setup_hardware():
@@ -128,16 +280,16 @@ def setup_hardware():
         raise
 
 
-def setup_new_ai():
-    """Initialise l'IA-Marc V2."""
+def setup_new_ai(level_name="LEVEL7"):
+    """Initialise l'IA-Marc V2 avec le niveau choisi."""
     if not NEW_AI_AVAILABLE:
         return None
 
     try:
-        print("Initialisation de l'IA-Marc V2...")
+        print(f"Initialisation de l'IA-Marc V2 (Niveau {level_name})...")
         ai = ChessEngine()
-        ai.set_level("LEVEL7")  # Niveau par défaut
-        print(f"IA-Marc V2 prête (Niveau par défaut: Club)")
+        ai.set_level(level_name)
+        print(f"IA-Marc V2 prête.")
         return ai
     except Exception as e:
         print(f"Erreur lors de l'initialisation de l'IA: {e}")
@@ -310,17 +462,22 @@ def build_move(from_coords, to_coords, game_board):
 
 
 def main():
-    print("=== Démarrage de Chess Game IA-Marc V2 ===")
+    print("=== Démarrage de Chess Game IA-Marc V2 avec Menu ===")
     
-    # Init Matériel
+    # 1. Lancement du Menu
+    menu = GameMenu()
+    selected_level = menu.run()
+    print(f"Niveau choisi : {selected_level}")
+
+    # 2. Init Matériel Échiquier
     try:
         display_matrix, display_row, sensor_pins = setup_hardware()
     except Exception as e:
         print(f"Erreur fatale matériel: {e}")
         return
 
-    # Init IA
-    ai_engine = setup_new_ai()
+    # 3. Init IA
+    ai_engine = setup_new_ai(selected_level)
     if not ai_engine:
         print("Attention: IA non disponible, mode 2 joueurs uniquement.")
 
@@ -337,7 +494,7 @@ def main():
             print(game_board)
             print("--------------------------------------")
             turn_color = "Blancs" if game_board.turn == chess.WHITE else "Noirs"
-            print(f"Tour: {turn_color}")
+            print(f"Tour: {turn_color} | Niveau: {selected_level}")
 
             # Si c'est le tour de l'IA (Noirs)
             if ai_engine and game_board.turn == chess.BLACK:
@@ -345,7 +502,6 @@ def main():
                 start_time = time.time()
                 
                 # Recherche du meilleur coup
-                # On utilise 2.0 secondes comme limite pour être réactif sur RPi5
                 best_move = ai_engine.get_move(game_board, time_limit=2.0)
                 
                 duration = time.time() - start_time

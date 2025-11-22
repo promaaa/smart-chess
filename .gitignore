@@ -24,6 +24,8 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+GEMINI
+GEMINI.md   
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -136,6 +138,7 @@ GEMINI.md
 ai/chess_nn_weights.npz
 *.pstats
 *.prof
+GEMINI.md
 
 # Opening books (too large for GitHub)
 prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin
