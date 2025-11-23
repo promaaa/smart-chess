@@ -1,22 +1,15 @@
+
 #!/usr/bin/env python3
 """
 Script de jeu d'échecs avec l'IA-Marc V2 sur matériel réel + Menu sur écran 2.8".
 =================================================================================
-
-Basé sur chess_game_v2.py.
-Ajoute un menu de sélection de niveau via un écran LCD 2.8" et un potentiomètre (encodeur rotatif).
+Mise à jour Finale : Alignement strict sur le code de test "screen_28.py" validé.
 
 Fonctionnalités :
 - Menu graphique pour choisir le niveau de l'IA.
-- Navigation via encodeur rotatif (rotation + clic).
-- Détection des mouvements via capteurs Hall (MCP23017).
-- Affichage des coups via LEDs (HT16K33).
-- Intégration de l'IA-Marc V2.
-
-Matériel requis :
-- Échiquier connecté en I2C (MCP23017, HT16K33).
-- Écran LCD 2.8" (ex: ILI9341) connecté en SPI.
-- Encodeur rotatif connecté en GPIO.
+- Affichage en temps réel du statut de la partie (Tour, Coup, Echec).
+- Navigation via encodeur rotatif.
+- Détection plateau + LEDs.
 """
 
 import os
@@ -55,7 +48,6 @@ try:
     from engine_config import DIFFICULTY_LEVELS
     NEW_AI_AVAILABLE = True
 except ImportError as e:
-    # Fallback: Essayer le chemin local si le dossier a été déplacé dans firmware
     try:
         sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
         from engine_main import ChessEngine
@@ -66,17 +58,34 @@ except ImportError as e:
         NEW_AI_AVAILABLE = False
 
 
-# --- CONFIGURATION PINS (À ADAPTER) ---
-# Écran SPI
-CS_PIN = digitalio.DigitalInOut(board.CE0)
-DC_PIN = digitalio.DigitalInOut(board.D25)
-RST_PIN = digitalio.DigitalInOut(board.D27)
+# --- CONFIGURATION PINS (Confirmé fonctionnel) ---
+# Écran SPI ILI9341
+CS_PIN = digitalio.DigitalInOut(board.CE0)   # Pin 24
+DC_PIN = digitalio.DigitalInOut(board.D25)   # Pin 22
+RST_PIN = digitalio.DigitalInOut(board.D24)  # Pin 18 (Mapping regroupé)
+
+# Vitesse standard (24MHz) validée par le test
 BAUDRATE = 24000000
 
 # Encodeur Rotatif (GPIO BCM)
 ENC_CLK = 17
 ENC_DT = 27
 ENC_SW = 22
+
+# --- FONCTION COULEUR (CORRECTION BGR) ---
+# Votre écran est BGR, mais Pillow travaille en RGB.
+# Cette fonction convertit (R, G, B) -> (B, G, R) pour l'affichage.
+def color(r, g, b):
+    return (b, g, r)
+
+# Palette (Couleurs corrigées via la fonction)
+C_BLACK  = color(0, 0, 0)
+C_WHITE  = color(255, 255, 255)
+C_RED    = color(255, 0, 0)
+C_GREEN  = color(0, 255, 0)
+C_BLUE   = color(0, 0, 255)
+C_GRAY   = color(100, 100, 100)
+C_ORANGE = color(255, 165, 0)
 
 
 # --- DÉBUT DE LA TABLE DE TRADUCTION (LED_MAP) ---
@@ -109,59 +118,89 @@ LED_MAP = {
 # --- FIN DE LA TABLE DE TRADUCTION ---
 
 
-class GameMenu:
-    """Gère l'affichage du menu et la sélection du niveau."""
+class SmartDisplay:
+    """Gère l'affichage complet (Menu + Jeu)."""
     
     def __init__(self):
         if not MENU_HARDWARE_AVAILABLE:
-            print("Mode simulation menu (console)")
+            print("Mode simulation écran (console)")
             return
 
-        # Init Écran
+        # Init SPI avec MISO (conforme au test)
         spi = busio.SPI(clock=board.SCK, MOSI=board.MOSI, MISO=board.MISO)
-        self.disp = ili9341.ILI9341(spi, rotation=90, cs=CS_PIN, dc=DC_PIN, rst=RST_PIN, baudrate=BAUDRATE)
+        
+        # --- HARD RESET (Copie conforme du code de test) ---
+        # Séquence indispensable pour démarrer l'écran à froid
+        RST_PIN.direction = digitalio.Direction.OUTPUT
+        RST_PIN.value = True
+        time.sleep(0.1)
+        RST_PIN.value = False
+        time.sleep(0.1)
+        RST_PIN.value = True
+        time.sleep(0.1)
+        
+        # --- INITIALISATION ÉCRAN ---
+        # Nous utilisons width=320, height=240 pour forcer le mode paysage
+        # sans utiliser 'rotation=90' dans le constructeur (source de l'erreur précédente).
+        self.disp = ili9341.ILI9341(
+            spi, 
+            cs=CS_PIN, 
+            dc=DC_PIN, 
+            rst=RST_PIN, 
+            baudrate=BAUDRATE,
+            width=320,
+            height=240
+        )
         
         # Init Encodeur
         self.encoder = RotaryEncoder(ENC_CLK, ENC_DT, max_steps=0)
         self.button = Button(ENC_SW)
         
         # Init Buffer Image
-        self.width = self.disp.width
-        self.height = self.disp.height
+        # On utilise les dimensions natives rapportées par l'initialisation
+        if self.disp.rotation % 180 == 90:
+            self.width = self.disp.width
+            self.height = self.disp.height
+        else:
+            self.width = self.disp.width
+            self.height = self.disp.height
+            
+        print(f"Ecran initialisé : {self.width}x{self.height}")
         self.image = Image.new("RGB", (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image)
         
-        # Fonts (Chargement par défaut si échec)
+        # Fonts
         try:
-            self.font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-            self.font_item = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+            self.font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+            self.font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+            self.font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         except IOError:
-            self.font_title = ImageFont.load_default()
-            self.font_item = ImageFont.load_default()
+            self.font_large = ImageFont.load_default()
+            self.font_medium = ImageFont.load_default()
+            self.font_small = ImageFont.load_default()
 
-        # Niveaux disponibles
+        # Menu Data
         self.levels = list(DIFFICULTY_LEVELS.keys())
-        self.levels.sort() # S'assurer de l'ordre
+        self.levels.sort()
         self.selected_index = 0
-        self.last_index = -1
         
     def draw_menu(self):
-        """Dessine le menu sur l'écran."""
-        if not MENU_HARDWARE_AVAILABLE:
-            return
+        """Dessine le menu de sélection."""
+        if not MENU_HARDWARE_AVAILABLE: return
 
-        # Fond noir
-        self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=0)
+        # Fond Noir
+        self.draw.rectangle((0, 0, self.width, self.height), outline=0, fill=C_BLACK)
         
-        # Titre
-        self.draw.text((10, 10), "SMART CHESS", font=self.font_title, fill="#FFFFFF")
-        self.draw.text((10, 40), "Choisissez le niveau :", font=self.font_item, fill="#AAAAAA")
+        # En-tête
+        self.draw.rectangle((0, 0, self.width, 50), fill=C_BLUE)
+        text_title = "SMART CHESS"
+        bbox = self.draw.textbbox((0, 0), text_title, font=self.font_large)
+        tw = bbox[2] - bbox[0]
+        self.draw.text(((self.width - tw) // 2, 10), text_title, font=self.font_large, fill=C_WHITE)
         
-        # Liste des niveaux (fenêtre glissante si besoin, ici simple)
-        start_y = 70
-        item_height = 25
-        
-        # On affiche 5 items autour de la sélection
+        # Liste déroulante
+        start_y = 60
+        item_height = 30
         display_range = 5
         start_index = max(0, min(self.selected_index - 2, len(self.levels) - display_range))
         
@@ -171,39 +210,32 @@ class GameMenu:
             y = start_y + (i - start_index) * item_height
             
             if i == self.selected_index:
-                # Surlignage
-                self.draw.rectangle((0, y, self.width, y + item_height), fill="#00FF00")
-                text_color = "#000000"
+                # Barre de sélection Verte
+                self.draw.rectangle((10, y, self.width - 10, y + item_height), fill=C_GREEN)
+                text_color = C_BLACK
                 prefix = "> "
             else:
-                text_color = "#FFFFFF"
+                text_color = C_WHITE
                 prefix = "  "
                 
             text = f"{prefix}{level_data.name} ({level_data.elo})"
-            self.draw.text((10, y), text, font=self.font_item, fill=text_color)
+            self.draw.text((20, y + 5), text, font=self.font_small, fill=text_color)
             
         self.disp.image(self.image)
 
-    def run(self):
-        """Boucle principale du menu."""
+    def run_menu(self):
+        """Exécute la boucle du menu."""
         if not MENU_HARDWARE_AVAILABLE:
             # Fallback console
-            print("--- MENU CONSOLE ---")
-            for i, l in enumerate(self.levels):
-                print(f"{i}: {l}")
-            try:
-                idx = int(input("Choix (0-7): "))
-                return self.levels[idx]
-            except:
-                return "LEVEL7"
+            for i, l in enumerate(self.levels): print(f"{i}: {l}")
+            try: return self.levels[int(input("Choix: "))]
+            except: return "LEVEL7"
 
         print("Affichage du menu...")
         self.draw_menu()
-        
         last_steps = 0
         
         while True:
-            # Lecture encodeur
             steps = self.encoder.steps
             if steps != last_steps:
                 diff = steps - last_steps
@@ -211,397 +243,263 @@ class GameMenu:
                 last_steps = steps
                 self.draw_menu()
             
-            # Lecture bouton
             if self.button.is_pressed:
-                print(f"Niveau sélectionné : {self.levels[self.selected_index]}")
-                # Petit effet visuel de confirmation
-                self.draw.rectangle((0, 0, self.width, self.height), fill="#00FF00")
+                # Feedback visuel
+                self.draw.rectangle((0, 0, self.width, self.height), fill=C_GREEN)
+                self.draw.text((80, 100), "NIVEAU OK", font=self.font_large, fill=C_BLACK)
                 self.disp.image(self.image)
-                time.sleep(0.5)
+                time.sleep(1)
                 return self.levels[self.selected_index]
-            
             time.sleep(0.05)
+
+    def update_game_status(self, board, level_key, last_move_uci=None, ai_thinking=False):
+        """Met à jour l'écran pendant la partie."""
+        if not MENU_HARDWARE_AVAILABLE: return
+        
+        # 1. Fond et Structure
+        self.draw.rectangle((0, 0, self.width, self.height), fill=C_BLACK)
+        
+        # Barre du haut (Niveau)
+        level_name = DIFFICULTY_LEVELS[level_key].name
+        self.draw.rectangle((0, 0, self.width, 30), fill=C_GRAY)
+        self.draw.text((10, 5), f"Niveau: {level_name}", font=self.font_small, fill=C_WHITE)
+        
+        # 2. Qui joue ?
+        turn_text = "TRAIT: BLANCS" if board.turn == chess.WHITE else "TRAIT: NOIRS"
+        color_bg = C_WHITE if board.turn == chess.WHITE else C_BLUE # Bleu pour noir (plus lisible)
+        color_txt = C_BLACK if board.turn == chess.WHITE else C_WHITE
+        
+        self.draw.rectangle((0, 40, self.width, 80), fill=color_bg)
+        self.draw.text((10, 50), turn_text, font=self.font_medium, fill=color_txt)
+        
+        # 3. Dernier coup
+        if last_move_uci:
+            self.draw.text((10, 90), f"Dernier coup: {last_move_uci}", font=self.font_medium, fill=C_WHITE)
+            
+        # 4. Statut spécial (Echec, Mat, Réflexion)
+        status_y = 130
+        if ai_thinking:
+            self.draw.text((10, status_y), ">>> IA Réfléchit...", font=self.font_small, fill=C_ORANGE)
+        elif board.is_checkmate():
+            self.draw.rectangle((0, status_y, self.width, status_y+40), fill=C_RED)
+            self.draw.text((10, status_y+5), "ECHEC ET MAT !", font=self.font_medium, fill=C_WHITE)
+        elif board.is_check():
+            self.draw.text((10, status_y), "ATTENTION: ECHEC", font=self.font_medium, fill=C_RED)
+        elif board.is_stalemate():
+            self.draw.text((10, status_y), "PAT (Egalité)", font=self.font_medium, fill=C_BLUE)
+            
+        self.disp.image(self.image)
 
 
 def setup_hardware():
     """Initialise tout le matériel I2C et renvoie les objets clés."""
     print("=== Initialisation du matériel de l'échiquier ===")
-
     try:
-        # 1. Bus I2C
         i2c = busio.I2C(board.SCL, board.SDA)
-
-        # 2. Multiplexeur
         tca = adafruit_tca9548a.TCA9548A(i2c, address=0x72)
-
-        # 3. Contrôleurs LED
-        print("   - Init LEDs C4 (0x70) et C5 (0x71)...")
+        print("   - Init LEDs...")
         display_matrix = Matrix16x8(tca[4], address=0x70)
         display_row = Matrix16x8(tca[5], address=0x71)
         display_matrix.brightness = 0.2
         display_row.brightness = 0.2
-        display_matrix.fill(0)
-        display_row.fill(0)
-        display_matrix.show()
-        display_row.show()
+        display_matrix.fill(0); display_row.fill(0); display_matrix.show(); display_row.show()
 
-        # 4. Contrôleurs MCP23017
-        print("   - Init Capteurs C0, C1, C2, C3 (0x20)...")
-        mcps = [
-            MCP23017(tca[0], address=0x20),  # Rangées 1-2
-            MCP23017(tca[1], address=0x20),  # Rangées 3-4
-            MCP23017(tca[2], address=0x20),  # Rangées 5-6
-            MCP23017(tca[3], address=0x20),  # Rangées 7-8
-        ]
-
-        # 5. Matrice des pins capteurs
+        print("   - Init Capteurs...")
+        mcps = [MCP23017(tca[i], address=0x20) for i in range(4)]
         sensor_pins = [[None for _ in range(8)] for _ in range(8)]
         pin_map_a = [0, 8, 1, 9, 2, 10, 3, 11]
         pin_map_b = [15, 7, 14, 6, 13, 5, 12, 4]
 
-        for row in range(4):  # 4 MCPs
+        for row in range(4):
             for col in range(8):
                 sensor_pins[row * 2][col] = mcps[row].get_pin(pin_map_a[col])
                 sensor_pins[row * 2 + 1][col] = mcps[row].get_pin(pin_map_b[col])
 
-        # 6. Configuration des pins
         for row in range(8):
             for col in range(8):
                 pin = sensor_pins[row][col]
                 pin.direction = digitalio.Direction.INPUT
                 pin.pull = digitalio.Pull.UP
 
-        print("=== Matériel initialisé avec succès ===")
         return display_matrix, display_row, sensor_pins
-
     except Exception as e:
         print(f"\nERREUR MATÉRIELLE: {e}")
         traceback.print_exc()
         raise
 
-
 def setup_new_ai(level_name="LEVEL7"):
-    """Initialise l'IA-Marc V2 avec le niveau choisi."""
-    if not NEW_AI_AVAILABLE:
-        return None
-
+    if not NEW_AI_AVAILABLE: return None
     try:
-        print(f"Initialisation de l'IA-Marc V2 (Niveau {level_name})...")
         ai = ChessEngine()
         ai.set_level(level_name)
-        print(f"IA-Marc V2 prête.")
         return ai
     except Exception as e:
-        print(f"Erreur lors de l'initialisation de l'IA: {e}")
-        traceback.print_exc()
+        print(f"Erreur init IA: {e}")
         return None
 
-
 def get_state_from_sensors(sensor_pins):
-    """
-    Lit les 64 capteurs et renvoie un état 8x8 (True = pièce présente).
-    (row, col)
-    """
     state = [[False for _ in range(8)] for _ in range(8)]
     for r in range(8):
         for c in range(8):
-            # Lecture sécurisée
-            try:
-                state[r][c] = not sensor_pins[r][c].value
-            except OSError:
-                # En cas d'erreur I2C transitoire, on suppose l'état précédent ou False
-                pass
+            try: state[r][c] = not sensor_pins[r][c].value
+            except OSError: pass
     return state
 
-
 def get_initial_state(sensor_pins):
-    """
-    Attend que l'utilisateur place les 32 pièces de départ.
-    """
-    print("\033[H\033[J", end="")
-    print("Veuillez placer les pièces en position de départ.")
-    print("Le script démarrera lorsque les 32 pièces seront détectées.")
-    
-    FAULTY_SQUARE = (6, 3)  # d7
-
+    print("\033[H\033[JPlacer les pièces...")
+    FAULTY_SQUARE = (6, 3)
     while True:
         state = get_state_from_sensors(sensor_pins)
-        count = 0
-        is_pos_correct = True
-        errors_found = []
-
-        board_display = ""
-        for r in range(7, -1, -1):
-            board_display += f" {r + 1} |"
-            for c in range(8):
-                is_present = state[r][c]
-                is_expected = r in [0, 1, 6, 7]
-
-                if is_present:
-                    count += 1
-                    if is_expected:
-                        board_display += "[X]"
-                    else:
-                        board_display += "[!]"
-                        is_pos_correct = False
-                        errors_found.append(((r, c), "extra"))
-                else:
-                    if is_expected:
-                        board_display += "[?]"
-                        is_pos_correct = False
-                        errors_found.append(((r, c), "missing"))
-                    else:
-                        board_display += "[ ]"
-            board_display += "\n"
-
-        board_display += "   " + "-" * 33 + "\n"
-        board_display += "     a  b  c  d  e  f  g  h\n"
-
-        print("\033[H", end="")
-        print("Veuillez placer les pièces en position de départ.")
-        print(board_display, end="")
-        print(f"Pièces détectées: {count}/32")
-
-        # Logique de dérogation d7
-        faulty_square_is_the_only_error = False
-        if not is_pos_correct:
-            if (
-                len(errors_found) == 1
-                and errors_found[0][0] == FAULTY_SQUARE
-                and errors_found[0][1] == "missing"
-            ):
-                print("ATTENTION: Capteur d7 défectueux détecté (ignoré).")
-                faulty_square_is_the_only_error = True
-
-        if count == 32 and is_pos_correct:
-            print("\nPosition de départ confirmée!")
-            return state
-
-        if count == 31 and faulty_square_is_the_only_error:
-            print("\nPosition de départ confirmée (avec dérogation d7)!")
-            state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = True
-            return state
-
+        count = sum(sum(row) for row in state)
+        if count >= 31: 
+             is_d7_missing = not state[6][3]
+             if count == 32 or (count == 31 and is_d7_missing):
+                 if is_d7_missing: state[6][3] = True
+                 print("Position OK.")
+                 return state
         time.sleep(0.5)
-
 
 def wait_for_state(sensor_pins, target_state):
-    """Met le jeu en pause jusqu'à ce que l'échiquier physique corresponde à target_state."""
-    print("\nERREUR: Coup illégal ou état invalide.")
-    print("Veuillez remettre les pièces à la position précédente.")
-
+    print(">>> REMETTRE LES PIÈCES EN PLACE <<<")
     FAULTY_SQUARE = (6, 3)
-
     while True:
-        current_state = get_state_from_sensors(sensor_pins)
-        
+        current = get_state_from_sensors(sensor_pins)
         if target_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]]:
-            current_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = True
-
-        if current_state == target_state:
-            print("Échiquier réinitialisé. Reprise de la partie.")
-            return
+            current[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = True
+        if current == target_state: return
         time.sleep(0.5)
 
-
 def find_diffs(old_state, new_state):
-    """Compare deux états et renvoie les cases soulevées et posées."""
-    lifted = []
-    placed = []
+    lifted, placed = [], []
     for r in range(8):
         for c in range(8):
-            if old_state[r][c] and not new_state[r][c]:
-                lifted.append((r, c))
-            elif not old_state[r][c] and new_state[r][c]:
-                placed.append((r, c))
+            if old_state[r][c] and not new_state[r][c]: lifted.append((r, c))
+            elif not old_state[r][c] and new_state[r][c]: placed.append((r, c))
     return lifted, placed
 
-
 def set_square_leds(sensor_row, sensor_col, state, display_matrix, display_row):
-    """Allume ou éteint les LEDs d'une case."""
-    target_col = 7 - sensor_col
-    target_row = 7 - sensor_row
-    physical_corners = [
-        (target_col, target_row), (target_col + 1, target_row),
-        (target_col, target_row + 1), (target_col + 1, target_row + 1),
-    ]
-    for px, py in physical_corners:
+    target_col, target_row = 7 - sensor_col, 7 - sensor_row
+    corners = [(target_col, target_row), (target_col + 1, target_row), (target_col, target_row + 1), (target_col + 1, target_row + 1)]
+    for px, py in corners:
         if (px, py) in LED_MAP:
             canal, sw_col, sw_row = LED_MAP[(px, py)]
-            if canal == "C4":
-                display_matrix.pixel(sw_col, sw_row, state)
-            elif canal == "C5":
-                display_row.pixel(sw_col, sw_row, state)
-
+            if canal == "C4": display_matrix.pixel(sw_col, sw_row, state)
+            elif canal == "C5": display_row.pixel(sw_col, sw_row, state)
 
 def update_leds(display_matrix, display_row, from_coords, to_coords):
-    """Met à jour les LEDs pour afficher le coup."""
-    display_matrix.fill(0)
-    display_row.fill(0)
-    if from_coords:
-        set_square_leds(from_coords[0], from_coords[1], 1, display_matrix, display_row)
-    if to_coords:
-        set_square_leds(to_coords[0], to_coords[1], 1, display_matrix, display_row)
-    display_matrix.show()
-    display_row.show()
-
+    display_matrix.fill(0); display_row.fill(0)
+    if from_coords: set_square_leds(from_coords[0], from_coords[1], 1, display_matrix, display_row)
+    if to_coords: set_square_leds(to_coords[0], to_coords[1], 1, display_matrix, display_row)
+    display_matrix.show(); display_row.show()
 
 def build_move(from_coords, to_coords, game_board):
-    """Construit un objet chess.Move."""
     from_sq = chess.square(from_coords[1], from_coords[0])
     to_sq = chess.square(to_coords[1], to_coords[0])
     move = chess.Move(from_sq, to_sq)
-
-    # Promotion automatique en Dame
-    piece = game_board.piece_at(from_sq)
-    if piece and piece.piece_type == chess.PAWN:
-        if (piece.color == chess.WHITE and from_coords[0] == 6 and to_coords[0] == 7) or \
-           (piece.color == chess.BLACK and from_coords[0] == 1 and to_coords[0] == 0):
+    p = game_board.piece_at(from_sq)
+    if p and p.piece_type == chess.PAWN:
+        if (p.color == chess.WHITE and from_coords[0] == 6 and to_coords[0] == 7) or \
+           (p.color == chess.BLACK and from_coords[0] == 1 and to_coords[0] == 0):
             move.promotion = chess.QUEEN
     return move
 
-
 def main():
-    print("=== Démarrage de Chess Game IA-Marc V2 avec Menu ===")
+    print("=== SMART CHESS V2 - Démarrage ===")
     
-    # 1. Lancement du Menu
-    menu = GameMenu()
-    selected_level = menu.run()
+    # 1. Initialisation Ecran
+    display = SmartDisplay()
+    selected_level = display.run_menu()
     print(f"Niveau choisi : {selected_level}")
 
-    # 2. Init Matériel Échiquier
+    # 2. Matériel
     try:
         display_matrix, display_row, sensor_pins = setup_hardware()
-    except Exception as e:
-        print(f"Erreur fatale matériel: {e}")
-        return
+    except Exception: return
 
-    # 3. Init IA
+    # 3. IA
     ai_engine = setup_new_ai(selected_level)
-    if not ai_engine:
-        print("Attention: IA non disponible, mode 2 joueurs uniquement.")
-
+    
     game_board = chess.Board()
+    # Affichage initial du jeu
+    display.update_game_status(game_board, selected_level)
+    
     last_known_physical_state = get_initial_state(sensor_pins)
-    last_move_coords = (None, None)
     FAULTY_SQUARE = (6, 3)
 
     try:
         while not game_board.is_game_over():
-            # Affichage
-            print("\033[H\033[J", end="")
-            print("--- Échiquier Logique (IA-Marc V2) ---")
-            print(game_board)
-            print("--------------------------------------")
-            turn_color = "Blancs" if game_board.turn == chess.WHITE else "Noirs"
-            print(f"Tour: {turn_color} | Niveau: {selected_level}")
+            # Mise à jour écran début de tour
+            display.update_game_status(game_board, selected_level, 
+                                     game_board.peek().uci() if game_board.move_stack else None)
 
-            # Si c'est le tour de l'IA (Noirs)
+            # Tour IA
             if ai_engine and game_board.turn == chess.BLACK:
-                print("\n>>> L'IA réfléchit...")
-                start_time = time.time()
+                display.update_game_status(game_board, selected_level, ai_thinking=True)
                 
-                # Recherche du meilleur coup
                 best_move = ai_engine.get_move(game_board, time_limit=2.0)
                 
-                duration = time.time() - start_time
-                print(f">>> Coup trouvé: {best_move.uci()} en {duration:.2f}s")
+                # Feedback coup IA
+                display.update_game_status(game_board, selected_level, f"IA JOUE: {best_move.uci()}")
                 
-                # Afficher le coup suggéré sur les LEDs pour que l'humain le joue
-                from_sq = best_move.from_square
-                to_sq = best_move.to_square
-                
-                ai_from_coords = (chess.square_rank(from_sq), chess.square_file(from_sq))
-                ai_to_coords = (chess.square_rank(to_sq), chess.square_file(to_sq))
-                
-                print(f"JOUEZ CE COUP: {best_move.uci()}")
-                update_leds(display_matrix, display_row, ai_from_coords, ai_to_coords)
-            else:
-                print("En attente de votre coup...")
-
-            # Boucle de détection physique
+                from_sq, to_sq = best_move.from_square, best_move.to_square
+                ai_from = (chess.square_rank(from_sq), chess.square_file(from_sq))
+                ai_to = (chess.square_rank(to_sq), chess.square_file(to_sq))
+                update_leds(display_matrix, display_row, ai_from, ai_to)
+            
+            # Boucle détection physique
             while True:
                 current_state = get_state_from_sensors(sensor_pins)
-                
-                # Patch d7
                 if last_known_physical_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]]:
                     current_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = True
 
                 if current_state != last_known_physical_state:
-                    print("Mouvement détecté...")
-                    time.sleep(0.75) # Debounce
+                    time.sleep(0.5) # Debounce
                     stable_state = get_state_from_sensors(sensor_pins)
-                    
                     lifted, placed = find_diffs(last_known_physical_state, stable_state)
                     
-                    # Patch d7 fantôme
-                    if FAULTY_SQUARE in lifted and len(lifted) > 1:
-                         if last_known_physical_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]]:
-                             lifted.remove(FAULTY_SQUARE)
+                    if FAULTY_SQUARE in lifted and len(lifted) > 1 and last_known_physical_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]]:
+                         lifted.remove(FAULTY_SQUARE)
 
-                    # Analyse du coup
+                    # Analyse coup
                     move = None
-                    from_coords, to_coords = None, None
-
-                    # Mouvement simple
                     if len(lifted) == 1 and len(placed) == 1:
-                        from_coords = lifted[0]
-                        to_coords = placed[0]
-                        move = build_move(from_coords, to_coords, game_board)
-
-                    # Capture
+                        move = build_move(lifted[0], placed[0], game_board)
                     elif len(lifted) == 2 and len(placed) == 1:
-                        to_coords = placed[0]
-                        if to_coords in lifted:
-                            from_coords = [sq for sq in lifted if sq != to_coords][0]
-                            move = build_move(from_coords, to_coords, game_board)
-
-                    # Roque
+                        dest = placed[0]
+                        if dest in lifted:
+                            orig = [sq for sq in lifted if sq != dest][0]
+                            move = build_move(orig, dest, game_board)
                     elif len(lifted) == 2 and len(placed) == 2:
                          king_sq = game_board.king(game_board.turn)
-                         king_coords = (chess.square_rank(king_sq), chess.square_file(king_sq))
-                         if king_coords in lifted:
-                             # Trouver la destination du roi (colonne 2 ou 6)
+                         k_coords = (chess.square_rank(king_sq), chess.square_file(king_sq))
+                         if k_coords in lifted:
                              for sq in placed:
                                  if sq[1] in [2, 6]:
-                                     from_coords = king_coords
-                                     to_coords = sq
-                                     move = build_move(from_coords, to_coords, game_board)
-                                     break
+                                     move = build_move(k_coords, sq, game_board); break
 
-                    # Validation
                     if move and move in game_board.legal_moves:
                         print(f"Coup joué: {move.uci()}")
                         game_board.push(move)
                         
-                        # Mise à jour état physique de référence
                         last_known_physical_state = stable_state
+                        if game_board.piece_at(chess.D7): last_known_physical_state[6][3] = True
+                        else: last_known_physical_state[6][3] = False
                         
-                        # Mise à jour patch d7
-                        if game_board.piece_at(chess.D7):
-                            last_known_physical_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = True
-                        else:
-                            last_known_physical_state[FAULTY_SQUARE[0]][FAULTY_SQUARE[1]] = False
-                            
-                        last_move_coords = (from_coords, to_coords)
-                        update_leds(display_matrix, display_row, from_coords, to_coords)
-                        break # Sortir de la boucle de détection pour passer au tour suivant
+                        update_leds(display_matrix, display_row, lifted[0] if lifted else None, placed[0] if placed else None)
+                        display.update_game_status(game_board, selected_level, move.uci())
+                        break
                     
                     elif move:
-                        print(f"Coup illégal: {move.uci()}")
+                        print("Coup illégal")
                         wait_for_state(sensor_pins, last_known_physical_state)
-                    else:
-                        print("Mouvement non reconnu.")
-                        wait_for_state(sensor_pins, last_known_physical_state)
-                
                 time.sleep(0.1)
 
-        print(f"Partie terminée! Résultat: {game_board.result()}")
+        print("Fin de partie.")
+        display.update_game_status(game_board, selected_level) # Afficher mat final
 
     except KeyboardInterrupt:
-        print("\nArrêt utilisateur.")
+        print("\nArrêt.")
     finally:
-        print("Extinction.")
         if 'display_matrix' in locals(): display_matrix.fill(0); display_matrix.show()
         if 'display_row' in locals(): display_row.fill(0); display_row.show()
 

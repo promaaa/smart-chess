@@ -31,13 +31,19 @@ from adafruit_mcp230xx.mcp23017 import MCP23017
 
 # Import de la nouvelle IA
 try:
-    # Ajout du chemin vers le moteur IA
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+    # Ajout du chemin vers le moteur IA (Racine du projet)
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V2"))
     from engine_main import ChessEngine
     NEW_AI_AVAILABLE = True
 except ImportError as e:
-    print(f"ERREUR CRITIQUE: Impossible d'importer l'IA-Marc V2: {e}")
-    NEW_AI_AVAILABLE = False
+    # Fallback: Essayer le chemin local si le dossier a été déplacé dans firmware
+    try:
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+        from engine_main import ChessEngine
+        NEW_AI_AVAILABLE = True
+    except ImportError as e2:
+        print(f"ERREUR CRITIQUE: Impossible d'importer l'IA-Marc V2: {e} / {e2}")
+        NEW_AI_AVAILABLE = False
 
 
 # --- DÉBUT DE LA TABLE DE TRADUCTION (LED_MAP) ---
@@ -124,6 +130,9 @@ def setup_hardware():
 
     except Exception as e:
         print(f"\nERREUR MATÉRIELLE: {e}")
+        if "[Errno 121]" in str(e):
+            print(">>> CONSEIL: Vérifiez les connexions I2C (SDA/SCL) et l'alimentation des périphériques.")
+            print(">>> Vérifiez que l'adresse 0x70 (Matrix) est bien détectée (i2cdetect -y 1).")
         traceback.print_exc()
         raise
 

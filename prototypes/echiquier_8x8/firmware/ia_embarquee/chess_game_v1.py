@@ -16,16 +16,24 @@ import chess  # pip install chess
 # --- Importation de l'IA Maison ---
 try:
     import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V1"))
+    # Chemin relatif depuis firmware/ia_embarquee/ vers la racine du projet
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V1"))
     from engine_brain import Engine
     from engine_search import Searcher
 
     AI_AVAILABLE = True
 except ImportError:
-    print(
-        "ERREUR CRITIQUE: Les fichiers 'engine_brain.py' ou 'engine_search.py' sont manquants."
-    )
-    sys.exit(1)
+    # Fallback: Essayer le chemin local si le dossier a été déplacé
+    try:
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V1"))
+        from engine_brain import Engine
+        from engine_search import Searcher
+        AI_AVAILABLE = True
+    except ImportError:
+        print(
+            "ERREUR CRITIQUE: Les fichiers 'engine_brain.py' ou 'engine_search.py' sont manquants."
+        )
+        sys.exit(1)
 
 # --- Importation Matériel ---
 import adafruit_tca9548a
@@ -173,6 +181,9 @@ def setup_hardware():
 
     except Exception as e:
         print(f"\nERREUR MATÉRIELLE FATALE: {e}")
+        if "[Errno 121]" in str(e):
+            print(">>> CONSEIL: Vérifiez les connexions I2C (SDA/SCL) et l'alimentation des périphériques.")
+            print(">>> Vérifiez que l'adresse 0x70 (Matrix) est bien détectée (i2cdetect -y 1).")
         sys.exit(1)
 
 
