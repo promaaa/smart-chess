@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+import chess
+import sys
+import time
+from datetime import datetime
+
+# --- Ajouter le dossier contenant ton moteur artisanal ---
+sys.path.append(r"C:\Users\maell\Documents\smart_chess_drive\chessData\smart-chess") #changer le chemin
+
+# --- Importation du moteur IA-Marc V2 ---
+from engine_main import ChessEngine
+
+# --- Importation du moteur artisanal ---
+from ChessInteractif10 import find_best_move, print_board
+
+
+RESULTS_FILE = r"C:\Users\maell\Documents\smart_chess_drive\chessMarc\match_results.txt"
+
+
+def play_single_game(game_number, artisanal_is_white):
+    board = chess.Board()
+
+    # Charger IA-Marc V2
+    marc = ChessEngine()
+    marc.enable_opening_book(False)     # évite les erreurs
+    marc.set_level("LEVEL8")
+
+    # Informations couleurs
+    white_name = "Artisanal" if artisanal_is_white else "IA-Marc"
+    black_name = "IA-Marc" if artisanal_is_white else "Artisanal"
+
+    print(f"\n==================== PARTIE {game_number} ====================")
+    print(f"Blancs : {white_name}")
+    print(f"Noirs  : {black_name}")
+    print("===========================================================\n")
+
+    print_board(board)
+
+    # Boucle de partie
+    while not board.is_game_over():
+
+        # À qui le tour ?
+        if board.turn == chess.WHITE:
+            # ----- BLANCS -----
+            if artisanal_is_white:
+                print("\nArtisanal (blancs) réfléchit...")
+                move, score, depth = find_best_move(board)
+                if move is None:
+                    print("❌ Artisanal n’a pas trouvé de coup.")
+                    break
+                print(f"Artisanal joue {move.uci()} (score={score}, depth={depth})")
+            else:
+                print("\nIA-Marc (blancs) réfléchit...")
+                move = marc.get_move(board, time_limit=3.0)
+                if move is None:
+                    print("❌ IA-Marc n’a pas trouvé de coup.")
+                    break
+                print(f"IA-Marc joue {move.uci()}")
+
+        else:
+            # ----- NOIRS -----
+            if artisanal_is_white:
+                print("\nIA-Marc (noirs) réfléchit...")
+                move = marc.get_move(board, time_limit=3.0)
+                if move is None:
+                    print("❌ IA-Marc n’a pas trouvé de coup.")
+                    break
+                print(f"IA-Marc joue {move.uci()}")
+            else:
+                print("\nArtisanal (noirs) réfléchit...")
+                move, score, depth = find_best_move(board)
+                if move is None:
+                    print("❌ Artisanal n’a pas trouvé de coup.")
+                    break
+                print(f"Artisanal joue {move.uci()} (score={score}, depth={depth})")
+
+        board.push(move)
+        print_board(board)
+
+    # ----- FIN DE PARTIE -----
+    result = board.result()  # "1-0", "0-1", "1/2-1/2"
+
+    if result == "1-0":
+        winner = white_name
+    elif result == "0-1":
+        winner = black_name
+    else:
+        winner = "NUL"
+
+    print("\n=== Partie terminée ===")
+    print(f"Résultat : {result}   (Gagnant : {winner})")
+
+    # --- Enregistrement dans fichier ---
+    with open(RESULTS_FILE, "a", encoding="utf-8") as f:
+        f.write(f"Partie {game_number}\n")
+        f.write(f"Blancs : {white_name}\n")
+        f.write(f"Noirs  : {black_name}\n")
+        f.write(f"Résultat officiel : {result}\n")
+        f.write(f"Gagnant : {winner}\n")
+        f.write("-" * 40 + "\n")
+
+    return result, winner
+
+
+
+def play_10_games():
+    """Joue 10 parties avec alternance des couleurs."""
+    print("\n===== DÉBUT DU MATCH 10 PARTIES (Artisanal vs IA-Marc) =====")
+
+    # Clear du fichier résultats
+    with open(RESULTS_FILE, "w", encoding="utf-8") as f:
+        f.write("=== MATCH 10 PARTIES ===\n")
+        f.write("Début : " + str(datetime.now()) + "\n\n")
+
+    artisanal_white = True
+
+    for game_number in range(1, 11):
+        play_single_game(game_number, artisanal_white)
+        artisanal_white = not artisanal_white     # inversion des couleurs
+
+    print("\n===== MATCH TERMINÉ =====")
+    print(f"Résultats enregistrés dans :\n{RESULTS_FILE}")
+
+
+if __name__ == "__main__":
+    play_10_games()
