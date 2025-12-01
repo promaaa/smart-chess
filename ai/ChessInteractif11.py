@@ -4,7 +4,7 @@ import chess.polyglot
 import time
 import random
 import sys
-from eval_fastB import eval_core   # module compilé par Pythran
+from eval_fastB import eval_core   
 
 DEBUG_PRINT = False  
 
