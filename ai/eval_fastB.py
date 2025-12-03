@@ -1,10 +1,3 @@
-# ============================================================
-#  eval_pythran.py  (à compiler avec Pythran)
-# ============================================================
-# pythran export eval_core(uint64, uint64, uint64, uint64, uint64, uint64,
-#                          uint64, uint64, uint64, uint64, uint64, uint64,
-#                          bool, int)
-
 # ---------- Tables PST ----------
 
 PAWN_PST = [
