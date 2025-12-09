@@ -14,7 +14,6 @@
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
 - [Hardware Design](#hardware-design)
-- [Vision System](#vision-system)
 - [AI Engine](#ai-engine)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -28,14 +27,13 @@
 SmartChess is a complete smart chessboard solution combining custom hardware design with a powerful embedded chess AI. The system features:
 
 - **Real-time piece detection** via a 64-reed sensor matrix (one per square)
-- **Computer vision backup** using CNN detection and optical flow tracking for error verification
 - **Visual feedback** through a 64-LED matrix indicating valid moves, threats, and game state
 - **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (400-2400 ELO)
 - **Custom PCB design** with KiCad schematics for the complete 8×8 board
 
 <div align="center">
-<img src="docs/img/rendu_final_coffrage1.jpg" alt="SmartChess Final Assembly" width="350"/>
-<img src="docs/img/rendu_final_pieces.jpg" alt="SmartChess with Pieces" width="350"/>
+<img src="docs/img/rendu_final_coffrage1.jpg" alt="SmartChess Final Assembly" width="400"/>
+<img src="docs/img/rendu_final_pieces.jpg" alt="SmartChess with Pieces" width="400"/>
 <br>
 <em>Left: Final wooden enclosure | Right: Board with chess pieces</em>
 </div>
@@ -59,13 +57,6 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 - **6 Personalities**: Aggressive, Defensive, Positional, Tactical, Materialist, Balanced
 - **Opening Book**: Polyglot format support for natural openings
 
-### Vision System
-
-- **CNN-based Detection**: Neural network for chessboard corner localization
-- **Lucas-Kanade Tracking**: Optical flow for real-time corner tracking
-- **Reed Sensor Fusion**: Cross-validation between vision and magnetic sensors
-- **Error Detection**: Automatic discrepancy detection for move verification
-
 ### AI Engine Optimizations
 
 | Optimization | Speedup | ELO Gain |
@@ -79,6 +70,56 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 
 ---
 
+## System Architecture
+
+### Hardware Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Raspberry Pi 5                          │
+│                    (Main Controller)                        │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ I²C (SCL/SDA)
+                          ▼
+              ┌───────────────────────┐
+              │   TCA9548A Mux        │
+              │   (I²C Hub)           │
+              └───┬───┬───┬───┬───┬───┘
+                  │   │   │   │   │
+    ┌─────────────┤   │   │   │   └──────────────────┐
+    ▼             ▼   ▼   ▼   ▼                      ▼
+┌───────┐   ┌───────┐   │   │                  ┌──────────┐
+│MCP23017│  │MCP23017│  │   │                  │ HT16K33  │
+│(CM0-3) │  │(CM0-3) │  │   │                  │ LED_A/B  │
+└───┬────┘  └───┬────┘  │   │                  └────┬─────┘
+    │           │       │   │                       │
+    ▼           ▼       ▼   ▼                       ▼
+┌────────────────────────────┐              ┌─────────────────┐
+│   64 Reed Sensors          │              │  64+8 LED Matrix │
+│   (Piece Detection)        │              │  (Visual Output) │
+└────────────────────────────┘              └─────────────────┘
+```
+
+### Software Stack
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│             Game Interface (chess_game_v2.py)               │
+├─────────────────────────────────────────────────────────────┤
+│                  IA-Marc V2 Engine                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐   │
+│  │  Search  │ │   Brain  │ │ Opening  │ │ Transposition │   │
+│  │ (α-β)    │ │  (Eval)  │ │  Book    │ │    Table      │   │
+│  └──────────┘ └──────────┘ └──────────┘ └───────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│                   Hardware Abstraction                      │
+│  ┌──────────────────────┐  ┌───────────────────────────┐    │
+│  │   Sensor Detection   │  │     LED Display Manager   │    │
+│  └──────────────────────┘  └───────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Hardware Design
 
@@ -109,92 +150,6 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 | 3 | MCP23017 (CM3) | 0x20 | Rows 7-8 sensors |
 | 4 | HT16K33 (LED_A) | 0x70 | 8×8 LED matrix |
 | 5 | HT16K33 (LED_B) | 0x71 | Extra 1×8 LED row |
-| 6 | Camera (USB/CSI) | - | Vision system input |
-
----
-
-## Vision System
-
-The vision subsystem provides a secondary detection layer to complement reed sensors, enabling piece tracking, move verification, and error detection.
-
-### Architecture
-
-```
-┌─────────────────┐     ┌──────────────────────────────────────────┐
-│  Camera Feed    │────▶│         ChessboardDetector               │
-│  (30 FPS)       │     │  ┌─────────────────┐ ┌────────────────┐  │
-└─────────────────┘     │  │  CNN Detection  │ │  LK Tracking   │  │
-                        │  │  (corner init)  │ │  (real-time)   │  │
-                        │  └────────┬────────┘ └───────┬────────┘  │
-                        │           │                  │           │
-                        │           ▼                  ▼           │
-                        │  ┌───────────────────────────────────┐   │
-                        │  │      TrackerStateManager          │   │
-                        │  │  (DETECTING ↔ TRACKING states)    │   │
-                        │  └───────────────────────────────────┘   │
-                        └──────────────────────┬───────────────────┘
-                                               │
-                                               ▼
-                        ┌──────────────────────────────────────────┐
-                        │          VisionReedBridge                │
-                        │  ┌─────────────────────────────────────┐ │
-                        │  │  Compare vision vs. reed sensors    │ │
-                        │  │  Detect discrepancies & errors      │ │
-                        │  │  Verify move legality               │ │
-                        │  └─────────────────────────────────────┘ │
-                        └──────────────────────────────────────────┘
-```
-
-### Detection Pipeline
-
-| Stage | Method | Purpose |
-|-------|--------|----------|
-| **Initial Detection** | CNN (PyTorch) | Locate 4 chessboard corners with high accuracy |
-| **Real-time Tracking** | Lucas-Kanade Optical Flow | Track corners at 30+ FPS with minimal latency |
-| **State Management** | Finite State Machine | Switch between detection/tracking based on confidence |
-| **Sensor Fusion** | VisionReedBridge | Compare vision output with reed sensor readings |
-
-### Key Features
-
-**CNN Corner Detection:**
-- Lightweight neural network optimized for Raspberry Pi
-- Detects 4 board corners regardless of perspective
-- Automatic re-detection when tracking confidence drops
-
-**Lucas-Kanade Tracking:**
-- 30+ FPS real-time corner tracking
-- Pyramidal implementation for robustness
-- Sub-pixel accuracy for precise square mapping
-
-**Vision-Reed Fusion:**
-- Cross-validates piece positions between sensors
-- Detects sensor malfunctions or cheating attempts
-- Provides confidence scores for each detected state
-
-### Usage
-
-```python
-from vision.chessboard_detector import ChessboardDetector, create_detector
-from vision.integration import VisionReedBridge
-
-# Create detector with Raspberry Pi preset
-detector = create_detector("raspberry_pi")
-detector.load_model("models/corner_detector.pt")
-
-# Process camera frame
-result = detector.process_frame(frame)
-if result.detected:
-    corners = result.corners  # 4 corner positions
-
-# Compare with reed sensors
-bridge = VisionReedBridge(corners)
-bridge.update_reed_state(reed_matrix, timestamp)
-bridge.update_vision_state(vision_squares, timestamp, result.confidence)
-
-comparison = bridge.compare_states()
-if not comparison.matches:
-    print(f"Discrepancies detected: {comparison.discrepancies}")
-```
 
 ---
 
@@ -277,11 +232,7 @@ smart-chess/
     │   │   ├── ia_embarquee/    # Game scripts
     │   │   │   ├── chess_game_v1.py
     │   │   │   └── chess_game_v2.py
-    │   │   ├── vision/          # Vision system
-    │   │   │   ├── chessboard_detector.py  # Main detector
-    │   │   │   ├── integration.py          # Reed sensor bridge
-    │   │   │   ├── detection/              # CNN model & preprocessing
-    │   │   │   └── tracking/               # LK tracker & state mgmt
+    │   │   ├── vision/          # Camera detection (WIP)
     │   │   └── requirements.txt
     │   └── hardware/            # KiCad schematics
     │       ├── 8x8.kicad_sch
