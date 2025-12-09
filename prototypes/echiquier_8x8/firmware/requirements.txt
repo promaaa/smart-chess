@@ -9,3 +9,10 @@ RPi.GPIO
 spidev
 Pillow
 lgpio
+
+# Vision system dependencies
+opencv-python>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0
+# For Raspberry Pi, use: pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Or use tensorflow-lite for optimized inference on Pi
