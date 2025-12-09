@@ -117,34 +117,6 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 
 The vision subsystem provides a secondary detection layer to complement reed sensors, enabling piece tracking, move verification, and error detection.
 
-### Architecture
-
-```
-┌─────────────────┐     ┌──────────────────────────────────────────┐
-│  Camera Feed    │────▶│         ChessboardDetector               │
-│  (30 FPS)       │     │  ┌─────────────────┐ ┌────────────────┐  │
-└─────────────────┘     │  │  CNN Detection  │ │  LK Tracking   │  │
-                        │  │  (corner init)  │ │  (real-time)   │  │
-                        │  └────────┬────────┘ └───────┬────────┘  │
-                        │           │                  │           │
-                        │           ▼                  ▼           │
-                        │  ┌───────────────────────────────────┐   │
-                        │  │      TrackerStateManager          │   │
-                        │  │  (DETECTING ↔ TRACKING states)    │   │
-                        │  └───────────────────────────────────┘   │
-                        └──────────────────────┬───────────────────┘
-                                               │
-                                               ▼
-                        ┌──────────────────────────────────────────┐
-                        │          VisionReedBridge                │
-                        │  ┌─────────────────────────────────────┐ │
-                        │  │  Compare vision vs. reed sensors    │ │
-                        │  │  Detect discrepancies & errors      │ │
-                        │  │  Verify move legality               │ │
-                        │  └─────────────────────────────────────┘ │
-                        └──────────────────────────────────────────┘
-```
-
 ### Detection Pipeline
 
 | Stage | Method | Purpose |
