@@ -4,197 +4,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Chess - Interface Simulateur</title>
-    <meta name="description"
-        content="Simulateur d'interface joueur pour l'échiquier intelligent Smart Chess. Jouez aux échecs contre l'IA Marc.">
+    <title>Smart Chess</title>
+    <meta name="description" content="Jouez aux échecs contre l'IA Marc">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 </head>
 
 <body>
     <div class="app-container">
-        <!-- Écran simulé 2.8" -->
-        <div class="screen-simulator">
-            <div class="screen-bezel">
-                <div class="screen-inner">
-                    <!-- Header avec logo et statut -->
-                    <header class="screen-header">
-                        <div class="header-left">
-                            <div class="logo">
-                                <span class="logo-icon">&#9818;</span>
-                                <span class="logo-text">Smart Chess</span>
-                            </div>
-                        </div>
-                        <div class="header-right">
-                            <div class="connection-status" id="connection-status">
-                                <span class="status-dot online"></span>
-                                <span class="status-text">IA Marc</span>
-                            </div>
-                        </div>
-                    </header>
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">&#9818;</span>
+                <span class="logo-text">Smart Chess</span>
+            </div>
+            <div class="status">
+                <span class="status-dot"></span>
+                <span>IA Marc V2</span>
+            </div>
+        </header>
 
-                    <!-- Contenu principal -->
-                    <main class="screen-content">
-                        <!-- Écran de sélection du niveau (visible au démarrage) -->
-                        <section class="level-selection-screen" id="level-selection-screen">
-                            <h2 class="section-title">Choisir le niveau</h2>
-                            <div class="levels-grid" id="levels-grid">
-                                <!-- Les niveaux seront générés par JS -->
-                            </div>
-                            <div class="personality-section">
-                                <h3 class="subsection-title">Style de jeu</h3>
-                                <div class="personality-selector" id="personality-selector">
-                                    <!-- Personnalités générées par JS -->
-                                </div>
-                            </div>
-                            <button class="btn-primary btn-start" id="btn-start-game">
-                                <span class="btn-icon">&#9654;</span>
-                                Commencer la partie
-                            </button>
-                        </section>
+        <!-- Sélection du niveau -->
+        <section id="menu-screen" class="screen">
+            <h1>Choisir le niveau</h1>
+            <div class="levels-grid" id="levels-grid"></div>
 
-                        <!-- Écran de jeu (caché au démarrage) -->
-                        <section class="game-screen hidden" id="game-screen">
-                            <!-- Info panel supérieur -->
-                            <div class="game-info-panel">
-                                <div class="player-info opponent">
-                                    <span class="player-avatar">IA</span>
-                                    <div class="player-details">
-                                        <span class="player-name">IA Marc</span>
-                                        <span class="player-level" id="ai-level-display">Niveau 5</span>
-                                    </div>
-                                    <div class="captured-pieces" id="captured-by-ai"></div>
-                                </div>
-                            </div>
+            <h2>Style de jeu</h2>
+            <div class="personalities" id="personalities"></div>
 
-                            <!-- Échiquier -->
-                            <div class="chessboard-container">
-                                <div class="board-letters top">
-                                    <span>a</span><span>b</span><span>c</span><span>d</span>
-                                    <span>e</span><span>f</span><span>g</span><span>h</span>
-                                </div>
-                                <div class="board-wrapper">
-                                    <div class="board-numbers left">
-                                        <span>8</span><span>7</span><span>6</span><span>5</span>
-                                        <span>4</span><span>3</span><span>2</span><span>1</span>
-                                    </div>
-                                    <div class="chessboard" id="chessboard">
-                                        <!-- Cases générées par JS -->
-                                    </div>
-                                    <div class="board-numbers right">
-                                        <span>8</span><span>7</span><span>6</span><span>5</span>
-                                        <span>4</span><span>3</span><span>2</span><span>1</span>
-                                    </div>
-                                </div>
-                                <div class="board-letters bottom">
-                                    <span>a</span><span>b</span><span>c</span><span>d</span>
-                                    <span>e</span><span>f</span><span>g</span><span>h</span>
-                                </div>
-                            </div>
+            <button class="btn-start" id="btn-start">Jouer</button>
+        </section>
 
-                            <!-- Info panel inférieur -->
-                            <div class="game-info-panel">
-                                <div class="player-info player">
-                                    <span class="player-avatar">J1</span>
-                                    <div class="player-details">
-                                        <span class="player-name">Vous</span>
-                                        <span class="player-level">Blancs</span>
-                                    </div>
-                                    <div class="captured-pieces" id="captured-by-player"></div>
-                                </div>
-                            </div>
+        <!-- Jeu -->
+        <section id="game-screen" class="screen hidden">
+            <div class="player-bar opponent">
+                <div class="player-avatar">IA</div>
+                <div class="player-info">
+                    <span class="player-name">IA Marc</span>
+                    <span class="player-level" id="ai-level">Niveau 5</span>
+                </div>
+                <div class="captured" id="captured-white"></div>
+            </div>
 
-                            <!-- Barre d'état du jeu -->
-                            <div class="game-status-bar">
-                                <div class="status-message" id="game-status">Votre tour</div>
-                                <div class="move-history" id="move-history"></div>
-                            </div>
-
-                            <!-- Boutons d'action -->
-                            <div class="game-actions">
-                                <button class="btn-action" id="btn-undo" title="Annuler">&#8617;</button>
-                                <button class="btn-action" id="btn-resign" title="Abandonner">&#10006;</button>
-                                <button class="btn-action" id="btn-new-game" title="Nouvelle partie">&#8635;</button>
-                            </div>
-                        </section>
-
-                        <!-- Écran de fin de partie -->
-                        <section class="game-over-screen hidden" id="game-over-screen">
-                            <div class="game-over-content">
-                                <div class="game-over-icon" id="game-over-icon">&#9818;</div>
-                                <h2 class="game-over-title" id="game-over-title">Victoire !</h2>
-                                <p class="game-over-subtitle" id="game-over-subtitle">Félicitations, vous avez battu
-                                    l'IA Marc</p>
-                                <div class="game-over-stats">
-                                    <div class="stat">
-                                        <span class="stat-value" id="stat-moves">0</span>
-                                        <span class="stat-label">Coups</span>
-                                    </div>
-                                    <div class="stat">
-                                        <span class="stat-value" id="stat-captures">0</span>
-                                        <span class="stat-label">Captures</span>
-                                    </div>
-                                </div>
-                                <div class="game-over-actions">
-                                    <button class="btn-primary" id="btn-play-again">Rejouer</button>
-                                    <button class="btn-secondary" id="btn-change-level">Changer de niveau</button>
-                                </div>
-                            </div>
-                        </section>
-                    </main>
-
-                    <!-- Footer simulant les LEDs physiques -->
-                    <footer class="screen-footer">
-                        <div class="led-strip" id="led-strip">
-                            <div class="led active" data-led="1"></div>
-                            <div class="led" data-led="2"></div>
-                            <div class="led" data-led="3"></div>
-                            <div class="led" data-led="4"></div>
-                            <div class="led" data-led="5"></div>
-                            <div class="led" data-led="6"></div>
-                            <div class="led" data-led="7"></div>
-                            <div class="led" data-led="8"></div>
-                        </div>
-                    </footer>
+            <div class="board-container">
+                <div class="board-coords top">
+                    <span>a</span><span>b</span><span>c</span><span>d</span>
+                    <span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
+                <div class="board-row">
+                    <div class="board-coords left">
+                        <span>8</span><span>7</span><span>6</span><span>5</span>
+                        <span>4</span><span>3</span><span>2</span><span>1</span>
+                    </div>
+                    <div class="chessboard" id="chessboard"></div>
                 </div>
             </div>
 
-            <!-- Indication de simulation -->
-            <div class="simulation-badge">
-                Simulation ecran 2.8"
+            <div class="player-bar player">
+                <div class="player-avatar">Vous</div>
+                <div class="player-info">
+                    <span class="player-name">Joueur</span>
+                    <span class="player-level">Blancs</span>
+                </div>
+                <div class="captured" id="captured-black"></div>
             </div>
-        </div>
 
-        <!-- Panneau d'informations (hors écran simulé) -->
-        <aside class="info-panel">
-            <h3>A propos</h3>
-            <p>Cette interface simule l'écran 2.8" du plateau d'échecs intelligent Smart Chess.</p>
-            <div class="info-card">
-                <h4>IA Marc V2</h4>
-                <p>Moteur d'échecs développé pour le Raspberry Pi 5, avec 8 niveaux de difficulté (400-1700 ELO) et 6
-                    personnalités de jeu.</p>
+            <div class="status-bar">
+                <span id="status">Votre tour</span>
+                <span id="moves" class="moves"></span>
             </div>
-            <div class="info-card">
-                <h4>Comment jouer</h4>
-                <ol>
-                    <li>Sélectionnez un niveau de difficulté</li>
-                    <li>Choisissez un style de jeu pour l'IA</li>
-                    <li>Cliquez sur une pièce pour la sélectionner</li>
-                    <li>Cliquez sur une case valide pour déplacer</li>
-                </ol>
+
+            <div class="actions">
+                <button class="btn-action" id="btn-undo" title="Annuler">&#8617;</button>
+                <button class="btn-action" id="btn-menu" title="Menu">&#8635;</button>
             </div>
-            <div class="keyboard-shortcuts">
-                <h4>Raccourcis</h4>
-                <div class="shortcut"><kbd>N</kbd> Nouvelle partie</div>
-                <div class="shortcut"><kbd>U</kbd> Annuler coup</div>
-                <div class="shortcut"><kbd>Esc</kbd> Retour au menu</div>
+        </section>
+
+        <!-- Fin de partie -->
+        <section id="end-screen" class="screen hidden">
+            <div class="end-content">
+                <h1 id="end-title">Victoire</h1>
+                <p id="end-subtitle">Félicitations !</p>
+                <div class="end-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="stat-moves">0</span>
+                        <span class="stat-label">coups</span>
+                    </div>
+                </div>
+                <button class="btn-start" id="btn-replay">Rejouer</button>
+                <button class="btn-secondary" id="btn-back">Changer de niveau</button>
             </div>
-        </aside>
+        </section>
     </div>
 
     <script src="chess-ui.js"></script>
