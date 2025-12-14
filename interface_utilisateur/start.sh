@@ -15,11 +15,22 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+# Activer le virtual environment
+VENV_PATH="$(dirname "$0")/../venv"
+if [ -d "$VENV_PATH" ]; then
+    echo "🐍 Activation du virtual environment..."
+    source "$VENV_PATH/bin/activate"
+else
+    echo "⚠️  Virtual environment non trouvé, création..."
+    python3 -m venv "$VENV_PATH"
+    source "$VENV_PATH/bin/activate"
+fi
+
 # Vérifier les dépendances
 python3 -c "import chess" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "📦 Installation des dépendances..."
-    pip3 install python-chess
+    pip install python-chess
 fi
 
 # Lancer le serveur
