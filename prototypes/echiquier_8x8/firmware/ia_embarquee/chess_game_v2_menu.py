@@ -43,13 +43,13 @@ except ImportError as e:
 # --- Import de l'IA ---
 try:
     # Ajout du chemin vers le moteur IA (Racine du projet)
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V2"))
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ai/ia_marc/V2"))
     from engine_main import ChessEngine
     from engine_config import DIFFICULTY_LEVELS
     NEW_AI_AVAILABLE = True
 except ImportError as e:
     try:
-        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ai/ia_marc/V2"))
         from engine_main import ChessEngine
         from engine_config import DIFFICULTY_LEVELS
         NEW_AI_AVAILABLE = True

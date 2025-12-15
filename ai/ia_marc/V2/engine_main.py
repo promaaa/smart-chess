@@ -116,11 +116,11 @@ class ChessEngine:
         # Essayer d'abord Cerebellum (full) pour la meilleure qualité, puis Light
         polyglot_paths = [
             # Cerebellum (full) - 800MB, 2M+ positions - BEST
-            "ia_marc/book/Cerebellum.bin",
+            "ai/ia_marc/book/Cerebellum.bin",
             # Cerebellum3Merge - 170MB, excellent quality
-            "ia_marc/book/Cerebellum3Merge.bin",
+            "ai/ia_marc/book/Cerebellum3Merge.bin",
             # Cerebellum Light - 157MB, 500k+ positions - EXCELLENT
-            "ia_marc/book/Cerebellum_Light.bin",
+            "ai/ia_marc/book/Cerebellum_Light.bin",
         ]
 
         for path in polyglot_paths:
@@ -131,7 +131,7 @@ class ChessEngine:
                 return book
 
         # Fallback sur le livre JSON
-        json_path = "ia_marc/V2/data/openings.json"
+        json_path = "ai/ia_marc/V2/data/openings.json"
         book = OpeningBook(json_path, book_type="json")
         if book.load():
             logger.info(f"Livre d'ouvertures JSON chargé: {json_path}")

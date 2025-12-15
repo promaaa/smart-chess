@@ -223,25 +223,22 @@ smart-chess/
 │       ├── rendu_final_coffrage1.jpg
 │       └── rendu_final_pieces.jpg
 │
-├── ai/                          # Original AI R&D
-│   ├── Chess.py                 # Core chess logic
-│   ├── engine.py                # Search engines
-│   ├── evaluator.py             # Position evaluation
-│   └── ...
-│
-├── ia_marc/                     # Production AI engines
-│   ├── V1/                      # Version 1 (legacy)
-│   ├── V2/                      # Version 2 (current)
-│   │   ├── engine_main.py       # Main API
-│   │   ├── engine_brain.py      # PeSTO evaluation
-│   │   ├── engine_search.py     # NegaMax search
-│   │   ├── engine_tt.py         # Transposition table
-│   │   ├── engine_ordering.py   # Move ordering
-│   │   ├── engine_opening.py    # Opening book
-│   │   ├── engine_config.py     # Configuration
-│   │   ├── requirements.txt     # Dependencies
-│   │   └── tests/               # Test suite
-│   └── book/                    # Opening books (Polyglot)
+├── ai/                          # AI engines
+│   ├── NeuralNet/               # Neural network experiments
+│   ├── ai_Maëlle/               # Alternative AI implementation
+│   └── ia_marc/                 # Production AI engines
+│       ├── V1/                  # Version 1 (legacy)
+│       ├── V2/                  # Version 2 (current)
+│       │   ├── engine_main.py   # Main API
+│       │   ├── engine_brain.py  # PeSTO evaluation
+│       │   ├── engine_search.py # NegaMax search
+│       │   ├── engine_tt.py     # Transposition table
+│       │   ├── engine_ordering.py # Move ordering
+│       │   ├── engine_opening.py  # Opening book
+│       │   ├── engine_config.py # Configuration
+│       │   ├── requirements.txt # Dependencies
+│       │   └── tests/           # Test suite
+│       └── book/                # Opening books (Polyglot)
 │
 └── prototypes/                  # Hardware prototypes
     ├── echiquier_8x8/           # Main 8×8 prototype
@@ -279,7 +276,7 @@ git clone https://github.com/promaaa/smart-chess.git
 cd smart-chess
 
 # Navigate to the AI engine directory
-cd ia_marc/V2/
+cd ai/ia_marc/V2/
 
 # Create a virtual environment
 python3 -m venv venv
@@ -302,7 +299,7 @@ python3 chess_game_v2.py
 ### Quick AI Test
 
 ```python
-from ia_marc.V2.engine_main import ChessEngine
+from ai.ia_marc.V2.engine_main import ChessEngine
 import chess
 
 # Create engine
@@ -324,10 +321,10 @@ For stronger openings, download a Polyglot opening book:
 
 ```bash
 # Create book directory
-mkdir -p ia_marc/book/
+mkdir -p ai/ia_marc/book/
 
 # Download a book (example: Cerebellum Light)
-# Place the .bin file in ia_marc/book/
+# Place the .bin file in ai/ia_marc/book/
 ```
 
 ---
@@ -339,12 +336,12 @@ mkdir -p ia_marc/book/
 | Document | Location | Description |
 |----------|----------|-------------|
 | Hardware Structure | `prototypes/echiquier_8x8/firmware/structure.md` | Full hardware documentation |
-| AI Engine README | `ia_marc/V2/README.md` | Detailed engine documentation |
+| AI Engine README | `ai/ia_marc/V2/README.md` | Detailed engine documentation |
 | Hardware Schematic | `prototypes/echiquier_8x8/hardware/8x8.pdf` | KiCad schematic export |
 
 ### Key APIs
 
-**ChessEngine (ia_marc/V2/engine_main.py)**:
+**ChessEngine (ai/ia_marc/V2/engine_main.py)**:
 - `get_move(board, time_limit)`: Get best move for position
 - `set_level(name)`: Set difficulty by name
 - `set_elo(elo)`: Set difficulty by ELO (400-2400)

@@ -12,7 +12,7 @@ from urllib.parse import urlparse, parse_qs
 import threading
 
 # Ajouter le chemin vers IA Marc V2
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ia_marc', 'V2'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ai', 'ia_marc', 'V2'))
 
 try:
     import chess
@@ -39,7 +39,7 @@ def init_engine(level="LEVEL5"):
         current_level = level
         
         # Essayer de charger le livre d'ouvertures Polyglot
-        book_path = os.path.join(os.path.dirname(__file__), '..', 'ia_marc', 'book', 'Cerebellum_Light.bin')
+        book_path = os.path.join(os.path.dirname(__file__), '..', 'ai', 'ia_marc', 'book', 'Cerebellum_Light.bin')
         if os.path.exists(book_path):
             engine.set_opening_book(book_path, "polyglot")
             engine.enable_opening_book(True)

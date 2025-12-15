@@ -32,13 +32,13 @@ from adafruit_mcp230xx.mcp23017 import MCP23017
 # Import de la nouvelle IA
 try:
     # Ajout du chemin vers le moteur IA (Racine du projet)
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V2"))
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ai/ia_marc/V2"))
     from engine_main import ChessEngine
     NEW_AI_AVAILABLE = True
 except ImportError as e:
     # Fallback: Essayer le chemin local si le dossier a été déplacé dans firmware
     try:
-        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V2"))
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ai/ia_marc/V2"))
         from engine_main import ChessEngine
         NEW_AI_AVAILABLE = True
     except ImportError as e2:

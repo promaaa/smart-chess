@@ -17,7 +17,7 @@ import chess  # pip install chess
 try:
     import os
     # Chemin relatif depuis firmware/ia_embarquee/ vers la racine du projet
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ia_marc/V1"))
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../ai/ia_marc/V1"))
     from engine_brain import Engine
     from engine_search import Searcher
 
@@ -25,7 +25,7 @@ try:
 except ImportError:
     # Fallback: Essayer le chemin local si le dossier a été déplacé
     try:
-        sys.path.append(os.path.join(os.path.dirname(__file__), "../ia_marc/V1"))
+        sys.path.append(os.path.join(os.path.dirname(__file__), "../ai/ia_marc/V1"))
         from engine_brain import Engine
         from engine_search import Searcher
         AI_AVAILABLE = True

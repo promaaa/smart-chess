@@ -36,7 +36,7 @@ class UCIEngine:
 
         # --- Find best available opening book ---
         polyglot_paths = [
-            "ia_marc/book/Cerebellum.bin"
+            "ai/ia_marc/book/Cerebellum.bin"
         ]
         book_path_found = None
         for path in polyglot_paths:

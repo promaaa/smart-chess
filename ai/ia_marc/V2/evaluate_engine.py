@@ -11,7 +11,7 @@ Tests the engine for:
 5. Resource Usage
 
 Usage:
-    python3 ia_marc/V2/evaluate_engine.py
+    python3 ai/ia_marc/V2/evaluate_engine.py
 """
 
 import sys
@@ -30,8 +30,8 @@ try:
     from engine_main import ChessEngine
 except ImportError:
     # Try importing from root if running from there
-    sys.path.append(os.path.join(current_dir, "..", ".."))
-    from ia_marc.V2.engine_main import ChessEngine
+    sys.path.append(os.path.join(current_dir, "..", "..", ".."))
+    from ai.ia_marc.V2.engine_main import ChessEngine
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')

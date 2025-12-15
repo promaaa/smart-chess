@@ -62,7 +62,7 @@ class OpeningBook:
             book_path: Chemin vers le fichier JSON ou .bin (optionnel)
             book_type: Type de livre ("auto", "json", "polyglot")
         """
-        self.book_path = book_path or "ia_marc/V2/data/openings.json"
+        self.book_path = book_path or "ai/ia_marc/V2/data/openings.json"
         self.book_type = book_type
         self.openings = {}
         self.metadata = {}
@@ -474,7 +474,7 @@ class OpeningBook:
 # ============================================================================
 
 
-def create_basic_book(filepath: str = "ia_marc/V2/data/openings.json"):
+def create_basic_book(filepath: str = "ai/ia_marc/V2/data/openings.json"):
     """
     Crée un livre d'ouvertures basique si aucun n'existe.
 
@@ -529,7 +529,7 @@ if __name__ == "__main__":
 
     # Test 2: Livre Polyglot
     print("Test 2: Chargement du livre Polyglot")
-    book_poly = OpeningBook("ia_marc/book/Cerebellum_Light.bin", book_type="polyglot")
+    book_poly = OpeningBook("ai/ia_marc/book/Cerebellum_Light.bin", book_type="polyglot")
 
     if book_poly.load():
         print(f"✓ Chargé: {len(book_poly):,} positions\n")

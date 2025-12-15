@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Chess - Jeu à Distance</title>
+    <meta name="description"
+        content="Jouez aux échecs à distance contre un adversaire sur le plateau physique connecté">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">&#9818;</span>
+                <span class="logo-text">Smart Chess</span>
+                <span class="mode-badge">Remote</span>
+            </div>
+            <div class="connection-status" id="connection-status">
+                <span class="status-dot disconnected"></span>
+                <span>Déconnecté</span>
+            </div>
+        </header>
+
+        <!-- Écran de connexion -->
+        <section id="connect-screen" class="screen">
+            <div class="connect-content">
+                <h1>Jeu à Distance</h1>
+                <p class="subtitle">Affrontez un adversaire sur le plateau physique connecté</p>
+
+                <!-- Explication du fonctionnement -->
+                <div class="features">
+                    <div class="feature-card">
+                        <div class="feature-icon">🖥️</div>
+                        <div class="feature-text">
+                            <h3>Joueur Web (Vous)</h3>
+                            <p>Jouez vos coups directement sur cette interface. Vos mouvements s'affichent
+                                instantanément sur le plateau physique via les LEDs.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">♟️</div>
+                        <div class="feature-text">
+                            <h3>Plateau Physique Connecté</h3>
+                            <p>L'adversaire joue sur le vrai échiquier. Les capteurs magnétiques détectent ses coups qui
+                                apparaissent ici en temps réel.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💡</div>
+                        <div class="feature-text">
+                            <h3>LEDs Indicatrices</h3>
+                            <p>Chaque coup joué sur le web allume les 4 LEDs des cases concernées pour guider le joueur
+                                physique.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagramme de connexion -->
+                <div class="connection-diagram">
+                    <div class="diagram-title">Architecture de communication</div>
+                    <div class="diagram-flow">
+                        <div class="diagram-node active">
+                            <div class="icon">🖥️</div>
+                            <span class="label">Interface Web</span>
+                        </div>
+                        <div class="diagram-arrow">⟷</div>
+                        <div class="diagram-node">
+                            <div class="icon">📡</div>
+                            <span class="label">WebSocket</span>
+                        </div>
+                        <div class="diagram-arrow">⟷</div>
+                        <div class="diagram-node">
+                            <div class="icon">🔌</div>
+                            <span class="label">Raspberry Pi</span>
+                        </div>
+                        <div class="diagram-arrow">⟷</div>
+                        <div class="diagram-node">
+                            <div class="icon">♟️</div>
+                            <span class="label">Plateau I²C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-connect" id="btn-connect">
+                    <span class="btn-icon">⚡</span>
+                    Se connecter au plateau
+                </button>
+
+                <div class="simulation-note" id="simulation-note" style="display: none;">
+                    ⚠️ Mode démonstration — Plateau physique non connecté
+                </div>
+            </div>
+        </section>
+
+        <!-- Jeu -->
+        <section id="game-screen" class="screen hidden">
+            <!-- Adversaire (Noirs) -->
+            <div class="player-bar physical-player" id="player-black">
+                <div class="player-avatar">♟</div>
+                <div class="player-info">
+                    <span class="player-name">Joueur Physique</span>
+                    <span class="player-level">Noirs • Plateau connecté</span>
+                </div>
+                <span class="player-type physical">Plateau</span>
+                <span class="player-status waiting" id="status-black" style="display: none;">En attente</span>
+            </div>
+
+            <!-- Indicateur LED -->
+            <div class="led-indicator" id="led-indicator" style="display: none;">
+                <span class="led"></span>
+                <span>LEDs allumées sur le plateau : <strong id="led-squares">e2 → e4</strong></span>
+            </div>
+
+            <!-- Échiquier -->
+            <div class="board-container">
+                <div class="board-coords top">
+                    <span>a</span><span>b</span><span>c</span><span>d</span>
+                    <span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
+                <div class="board-row">
+                    <div class="board-coords left">
+                        <span>8</span><span>7</span><span>6</span><span>5</span>
+                        <span>4</span><span>3</span><span>2</span><span>1</span>
+                    </div>
+                    <div class="chessboard" id="chessboard"></div>
+                </div>
+            </div>
+
+            <!-- Vous (Blancs) -->
+            <div class="player-bar web-player" id="player-white">
+                <div class="player-avatar">♔</div>
+                <div class="player-info">
+                    <span class="player-name">Vous</span>
+                    <span class="player-level">Blancs • Interface web</span>
+                </div>
+                <span class="player-type web">Web</span>
+                <span class="player-status your-turn" id="status-white" style="display: none;">À vous !</span>
+            </div>
+
+            <!-- Barre de statut -->
+            <div class="status-bar">
+                <span id="status">Connexion en cours...</span>
+                <span id="moves" class="moves"></span>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn-action" id="btn-reset" title="Nouvelle partie">↻</button>
+            </div>
+
+            <!-- Panneau de simulation -->
+            <div class="simulation-panel hidden" id="simulation-panel">
+                <h3>🎮 Simuler le joueur physique (Noirs)</h3>
+                <div class="sim-inputs">
+                    <input type="text" id="sim-from" placeholder="e7" maxlength="2">
+                    <span class="sim-arrow">→</span>
+                    <input type="text" id="sim-to" placeholder="e5" maxlength="2">
+                    <button class="btn-sim" id="btn-sim-move">Jouer</button>
+                </div>
+                <p class="sim-help">En mode démo, simulez les coups de l'adversaire physique ici</p>
+            </div>
+        </section>
+
+        <!-- Fin de partie -->
+        <section id="end-screen" class="screen hidden">
+            <div class="end-content">
+                <h1 id="end-title">Partie terminée</h1>
+                <p id="end-subtitle">Résultat de la partie</p>
+                <div class="end-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="stat-moves">0</span>
+                        <span class="stat-label">coups joués</span>
+                    </div>
+                </div>
+                <button class="btn-start" id="btn-new-game">Nouvelle partie</button>
+                <button class="btn-secondary" id="btn-disconnect">Retour à l'accueil</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
