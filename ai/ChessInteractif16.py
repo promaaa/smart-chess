@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Interactive chess engine (v16).
+
+Successor to v14 with refinements and additional heuristics.
+Includes TT, Zobrist hashing, and opening book integration.
+"""
 import chess
 import chess.polyglot
 import time

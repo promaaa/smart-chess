@@ -1,3 +1,11 @@
+"""
+Lightweight handcrafted evaluator used by interactive engines.
+
+Provides piece-square tables (PST), simple material values,
+and a fast `eval_core(...)` function operating on bitboards.
+
+All scores are in centipawns; positive favors White.
+"""
 # ---------- Tables PST ----------
 
 PAWN_PST = [
@@ -96,6 +104,12 @@ def _popcount(bb):
 def eval_core(wp, wn, wb, wr, wq, wk,
               bp, bn, bb, br, bq, bk,
               stm_white, halfmove_clock):
+    """Core evaluation on bitboards.
+
+    Parameters are 64-bit bitboards for each piece set, the side to move
+    (`stm_white` as bool/int), and the halfmove clock. Returns an integer
+    centipawn score (positive for White).
+    """
 
     PAWN  = 100
     KNIGHT = 325

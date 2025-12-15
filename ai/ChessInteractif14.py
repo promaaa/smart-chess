@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Interactive chess engine (v14).
+
+Implements search with transposition tables, Zobrist hashing,
+opening book hooks, and simple endgame refinements.
+
+This module is intended for experimentation and evaluation.
+"""
 import chess
 import chess.polyglot
 import time

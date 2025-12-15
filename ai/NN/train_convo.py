@@ -1,3 +1,13 @@
+"""
+Training script for a compact 1D CNN evaluator from FEN + centipawn labels.
+
+Features:
+- Sampling and warmup for stable training on large datasets
+- AdamW with weight decay
+- Simple RMSE validation on a held-out sample
+
+Adjust `DATASET_PATH` and hyperparameters to your environment.
+"""
 import os
 import numpy as np
 import pandas as pd
@@ -33,6 +43,7 @@ print(f"📌 Device: {DEVICE}")
 # DATASET
 # ==============================
 class ChessDataset(Dataset):
+    """Minimal dataset mapping FEN strings to encoded planes and target eval."""
     def __init__(self, fens, evals):
         self.fens = fens
         self.evals = evals
@@ -67,6 +78,7 @@ class ChessDataset(Dataset):
 # CNN MODEL
 # ==============================
 class ChessCNN(nn.Module):
+    """Tiny 1D CNN over 768-bit board encoding, outputs a single eval value."""
     def __init__(self):
         super().__init__()
         self.conv = nn.Sequential(
@@ -95,6 +107,11 @@ class ChessCNN(nn.Module):
 # LOAD DATA (FIXED)
 # ==============================
 def load_data(path):
+    """Load and clean CSV with columns [FEN, Evaluation].
+
+    Converts mate scores to ±6 pawns and centipawns to pawns.
+    Returns (fens, evals) numpy arrays.
+    """
 
     def clean_eval(v):
         v = str(v).strip()
@@ -119,6 +136,7 @@ def load_data(path):
 # EVALUATION
 # ==============================
 def evaluate(model, loader):
+    """Compute RMSE over a dataloader without gradient."""
     model.eval()
     preds, targs = [], []
     with torch.no_grad():
@@ -135,6 +153,10 @@ def evaluate(model, loader):
 # TRAINING
 # ==============================
 def train():
+    """Main training loop with optional sampling and LR warmup.
+
+    Saves the best checkpoint (by RMSE) to `CHECKPOINT_FILE`.
+    """
     fens, evals = load_data(DATASET_PATH)
 
     model = ChessCNN().to(DEVICE)
