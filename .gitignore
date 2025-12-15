@@ -143,3 +143,6 @@ GEMINI.md
 # Opening books (too large for GitHub)
 prototypes/8x8-maquette/firmware/IA-Marc/book/Cerebellum_Light.bin
 *.bin
+*.pt
+*.zip
+chessData.csv

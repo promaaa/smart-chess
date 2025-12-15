@@ -1,3 +1,12 @@
+"""
+Match driver between a custom UCI engine and Stockfish.
+
+- Plays `NB_GAMES` games alternating colors.
+- Uses a per-move time limit (`TIME_PER_MOVE`).
+- Summarizes final score at the end.
+
+Adjust `MY_ENGINE_CMD` and `STOCKFISH_PATH` to your setup.
+"""
 import chess
 import chess.engine
 import subprocess
@@ -20,6 +29,10 @@ TIME_PER_MOVE = 5.0
 
 
 def play_game(engine_white, engine_black):
+    """Play a single game between two `SimpleEngine` instances.
+
+    Returns a result string ("1-0", "0-1", or "1/2-1/2").
+    """
     board = chess.Board()
     engines = {True: engine_white, False: engine_black}
 
@@ -42,6 +55,7 @@ def play_game(engine_white, engine_black):
 
 
 def main():
+    """Run a short match and print a final summary."""
     print("=== MATCH TEST ===")
 
     # Lancer les moteurs

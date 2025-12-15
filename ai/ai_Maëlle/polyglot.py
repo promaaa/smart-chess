@@ -1,3 +1,9 @@
+"""
+Polyglot opening book reader utilities.
+
+Allows probing binary Polyglot books for moves and randomness.
+Intended for use with `chess` positions to pick opening moves.
+"""
 from __future__ import annotations
 
 import chess
