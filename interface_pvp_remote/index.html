@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Chess - Jeu à Distance</title>
-    <meta name="description"
-        content="Jouez aux échecs à distance contre un adversaire sur le plateau physique connecté">
+    <title>Smart Chess — Remote</title>
+    <meta name="description" content="Jouez aux échecs à distance contre un adversaire sur le plateau physique">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,105 +19,69 @@
             <div class="logo">
                 <span class="logo-icon">&#9818;</span>
                 <span class="logo-text">Smart Chess</span>
-                <span class="mode-badge">Remote</span>
             </div>
-            <div class="connection-status" id="connection-status">
+            <div class="status" id="connection-status">
                 <span class="status-dot disconnected"></span>
-                <span>Déconnecté</span>
+                <span>Remote</span>
             </div>
         </header>
 
-        <!-- Écran de connexion -->
+        <!-- Connexion -->
         <section id="connect-screen" class="screen">
+            <h1>Jeu à distance</h1>
             <div class="connect-content">
-                <h1>Jeu à Distance</h1>
-                <p class="subtitle">Affrontez un adversaire sur le plateau physique connecté</p>
+                <p>Affrontez un adversaire sur le plateau physique connecté</p>
 
-                <!-- Explication du fonctionnement -->
-                <div class="features">
-                    <div class="feature-card">
-                        <div class="feature-icon">🖥️</div>
-                        <div class="feature-text">
-                            <h3>Joueur Web (Vous)</h3>
-                            <p>Jouez vos coups directement sur cette interface. Vos mouvements s'affichent
-                                instantanément sur le plateau physique via les LEDs.</p>
+                <div class="architecture">
+                    <h2>Communication</h2>
+                    <div class="arch-flow">
+                        <div class="arch-node active">
+                            <div class="node-icon">&#9000;</div>
+                            <span class="node-label">Web</span>
                         </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">♟️</div>
-                        <div class="feature-text">
-                            <h3>Plateau Physique Connecté</h3>
-                            <p>L'adversaire joue sur le vrai échiquier. Les capteurs magnétiques détectent ses coups qui
-                                apparaissent ici en temps réel.</p>
+                        <span class="arch-arrow">―</span>
+                        <div class="arch-node">
+                            <div class="node-icon">&#9881;</div>
+                            <span class="node-label">Serveur</span>
                         </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">💡</div>
-                        <div class="feature-text">
-                            <h3>LEDs Indicatrices</h3>
-                            <p>Chaque coup joué sur le web allume les 4 LEDs des cases concernées pour guider le joueur
-                                physique.</p>
+                        <span class="arch-arrow">―</span>
+                        <div class="arch-node">
+                            <div class="node-icon">&#9671;</div>
+                            <span class="node-label">Pi</span>
+                        </div>
+                        <span class="arch-arrow">―</span>
+                        <div class="arch-node">
+                            <div class="node-icon">&#9814;</div>
+                            <span class="node-label">Plateau</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Diagramme de connexion -->
-                <div class="connection-diagram">
-                    <div class="diagram-title">Architecture de communication</div>
-                    <div class="diagram-flow">
-                        <div class="diagram-node active">
-                            <div class="icon">🖥️</div>
-                            <span class="label">Interface Web</span>
-                        </div>
-                        <div class="diagram-arrow">⟷</div>
-                        <div class="diagram-node">
-                            <div class="icon">📡</div>
-                            <span class="label">WebSocket</span>
-                        </div>
-                        <div class="diagram-arrow">⟷</div>
-                        <div class="diagram-node">
-                            <div class="icon">🔌</div>
-                            <span class="label">Raspberry Pi</span>
-                        </div>
-                        <div class="diagram-arrow">⟷</div>
-                        <div class="diagram-node">
-                            <div class="icon">♟️</div>
-                            <span class="label">Plateau I²C</span>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="btn-connect" id="btn-connect">
-                    <span class="btn-icon">⚡</span>
-                    Se connecter au plateau
-                </button>
+                <button class="btn-start" id="btn-connect">Se connecter</button>
 
                 <div class="simulation-note" id="simulation-note" style="display: none;">
-                    ⚠️ Mode démonstration — Plateau physique non connecté
+                    Mode simulation — Plateau non connecté
                 </div>
             </div>
         </section>
 
         <!-- Jeu -->
         <section id="game-screen" class="screen hidden">
-            <!-- Adversaire (Noirs) -->
-            <div class="player-bar physical-player" id="player-black">
-                <div class="player-avatar">♟</div>
+            <div class="player-bar" id="player-black">
+                <div class="player-avatar">&#9823;</div>
                 <div class="player-info">
-                    <span class="player-name">Joueur Physique</span>
-                    <span class="player-level">Noirs • Plateau connecté</span>
+                    <span class="player-name">Adversaire</span>
+                    <span class="player-level">Noirs • Plateau</span>
                 </div>
                 <span class="player-type physical">Plateau</span>
-                <span class="player-status waiting" id="status-black" style="display: none;">En attente</span>
+                <span class="player-status waiting-turn" id="status-black" style="display: none;">En attente</span>
             </div>
 
-            <!-- Indicateur LED -->
             <div class="led-indicator" id="led-indicator" style="display: none;">
                 <span class="led"></span>
-                <span>LEDs allumées sur le plateau : <strong id="led-squares">e2 → e4</strong></span>
+                <span>LEDs : <strong id="led-squares">e2 → e4</strong></span>
             </div>
 
-            <!-- Échiquier -->
             <div class="board-container">
                 <div class="board-coords top">
                     <span>a</span><span>b</span><span>c</span><span>d</span>
@@ -133,38 +96,43 @@
                 </div>
             </div>
 
-            <!-- Vous (Blancs) -->
-            <div class="player-bar web-player" id="player-white">
-                <div class="player-avatar">♔</div>
+            <div class="player-bar" id="player-white">
+                <div class="player-avatar">Vous</div>
                 <div class="player-info">
-                    <span class="player-name">Vous</span>
-                    <span class="player-level">Blancs • Interface web</span>
+                    <span class="player-name">Joueur</span>
+                    <span class="player-level">Blancs • Web</span>
                 </div>
                 <span class="player-type web">Web</span>
-                <span class="player-status your-turn" id="status-white" style="display: none;">À vous !</span>
+                <span class="player-status your-turn" id="status-white" style="display: none;">Votre tour</span>
             </div>
 
-            <!-- Barre de statut -->
             <div class="status-bar">
-                <span id="status">Connexion en cours...</span>
+                <span id="status">Votre tour</span>
                 <span id="moves" class="moves"></span>
             </div>
 
-            <!-- Actions -->
             <div class="actions">
-                <button class="btn-action" id="btn-reset" title="Nouvelle partie">↻</button>
+                <button class="btn-action" id="btn-hint" title="Aide IA">&#9733;</button>
+                <button class="btn-action" id="btn-home" title="Accueil">&#8617;</button>
+                <button class="btn-action" id="btn-reset" title="Nouvelle partie">&#8635;</button>
             </div>
 
-            <!-- Panneau de simulation -->
+            <!-- Suggestion IA -->
+            <div class="ai-hint hidden" id="ai-hint">
+                <span class="hint-icon">&#9733;</span>
+                <span>Suggestion : <strong id="hint-move">e2 → e4</strong></span>
+                <button class="btn-hint-close" id="btn-hint-close">×</button>
+            </div>
+
             <div class="simulation-panel hidden" id="simulation-panel">
-                <h3>🎮 Simuler le joueur physique (Noirs)</h3>
+                <h3>Simuler l'adversaire</h3>
                 <div class="sim-inputs">
                     <input type="text" id="sim-from" placeholder="e7" maxlength="2">
                     <span class="sim-arrow">→</span>
                     <input type="text" id="sim-to" placeholder="e5" maxlength="2">
                     <button class="btn-sim" id="btn-sim-move">Jouer</button>
                 </div>
-                <p class="sim-help">En mode démo, simulez les coups de l'adversaire physique ici</p>
+                <p class="sim-help">Case départ → Case arrivée</p>
             </div>
         </section>
 
@@ -172,20 +140,19 @@
         <section id="end-screen" class="screen hidden">
             <div class="end-content">
                 <h1 id="end-title">Partie terminée</h1>
-                <p id="end-subtitle">Résultat de la partie</p>
+                <p id="end-subtitle">Résultat</p>
                 <div class="end-stats">
                     <div class="stat">
                         <span class="stat-value" id="stat-moves">0</span>
-                        <span class="stat-label">coups joués</span>
+                        <span class="stat-label">coups</span>
                     </div>
                 </div>
-                <button class="btn-start" id="btn-new-game">Nouvelle partie</button>
-                <button class="btn-secondary" id="btn-disconnect">Retour à l'accueil</button>
+                <button class="btn-start" id="btn-new-game">Rejouer</button>
+                <button class="btn-secondary" id="btn-disconnect">Retour</button>
             </div>
         </section>
     </div>
 
-    <!-- Toast container -->
     <div id="toast" class="toast"></div>
 
     <script src="app.js"></script>

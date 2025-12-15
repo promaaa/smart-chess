@@ -52,6 +52,14 @@ function setupEventListeners() {
         showScreen('connect-screen');
     });
 
+    document.getElementById('btn-home').addEventListener('click', () => {
+        showScreen('connect-screen');
+    });
+
+    // AI Hint
+    document.getElementById('btn-hint').addEventListener('click', requestAIHint);
+    document.getElementById('btn-hint-close').addEventListener('click', hideAIHint);
+
     document.getElementById('btn-sim-move').addEventListener('click', simulatePhysicalMove);
 
     document.getElementById('sim-from').addEventListener('keypress', (e) => {
@@ -147,6 +155,7 @@ function handleInit(data) {
     }
 
     updateGameStatus(data.game_status);
+    updateBoard(); // Refresh board to remove disabled state
 }
 
 function handleWebMove(data) {
@@ -210,18 +219,21 @@ function simulatePhysicalMove() {
     const fromInput = document.getElementById('sim-from');
     const toInput = document.getElementById('sim-to');
 
-    const from = fromInput.value.toLowerCase().trim();
-    const to = toInput.value.toLowerCase().trim();
+    const from = (fromInput.value || '').toLowerCase().trim();
+    const to = (toInput.value || '').toLowerCase().trim();
 
-    if (from.length !== 2 || to.length !== 2) {
-        showToast('Format invalide (ex: e7, e5)', 'error');
+    console.log('SIM:', from, '->', to);
+
+    // Simple check - just need 2 chars
+    if (from.length < 2 || to.length < 2) {
+        showToast('Entrez 2 cases (ex: e7 e5)', 'error');
         return;
     }
 
     sendMessage({
         type: 'simulate_physical_move',
-        from: from,
-        to: to
+        from: from.substring(0, 2),
+        to: to.substring(0, 2)
     });
 
     fromInput.value = '';
@@ -231,6 +243,84 @@ function simulatePhysicalMove() {
 
 function resetGame() {
     sendMessage({ type: 'reset' });
+    hideAIHint();
+}
+
+// ========== Aide IA ==========
+
+async function requestAIHint() {
+    if (!state.isMyTurn) {
+        showToast("L'aide n'est disponible que pendant votre tour", 'error');
+        return;
+    }
+
+    const hintBtn = document.getElementById('btn-hint');
+    hintBtn.classList.add('highlight');
+    showToast('Analyse en cours...', 'success');
+
+    try {
+        // Appeler l'API IA Marc (même serveur, port 8080)
+        const response = await fetch('http://localhost:8080/api/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fen: state.game.fen() })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.move) {
+                showAIHint(data.move.from, data.move.to, data.move.san);
+                return;
+            }
+        }
+
+        // Fallback: utiliser un coup simple
+        const moves = state.game.moves({ verbose: true });
+        if (moves.length > 0) {
+            // Préférer les captures ou les coups centraux
+            const captures = moves.filter(m => m.captured);
+            const move = captures.length > 0 ? captures[0] : moves[Math.floor(Math.random() * moves.length)];
+            showAIHint(move.from, move.to, move.san);
+        }
+    } catch (error) {
+        console.log('IA non disponible, suggestion basique');
+        // Fallback simple
+        const moves = state.game.moves({ verbose: true });
+        if (moves.length > 0) {
+            const move = moves[Math.floor(Math.random() * Math.min(5, moves.length))];
+            showAIHint(move.from, move.to, move.san);
+        }
+    } finally {
+        hintBtn.classList.remove('highlight');
+    }
+}
+
+function showAIHint(from, to, san) {
+    // Afficher le panneau
+    const hintPanel = document.getElementById('ai-hint');
+    const hintMove = document.getElementById('hint-move');
+    hintMove.textContent = `${from} → ${to} (${san})`;
+    hintPanel.classList.remove('hidden');
+
+    // Surligner les cases
+    clearHintHighlights();
+    const fromSquare = document.querySelector(`[data-square="${from}"]`);
+    const toSquare = document.querySelector(`[data-square="${to}"]`);
+    if (fromSquare) fromSquare.classList.add('hint-from');
+    if (toSquare) toSquare.classList.add('hint-to');
+
+    showToast(`Suggestion: ${san}`, 'success');
+}
+
+function hideAIHint() {
+    document.getElementById('ai-hint').classList.add('hidden');
+    clearHintHighlights();
+}
+
+function clearHintHighlights() {
+    document.querySelectorAll('.hint-from, .hint-to').forEach(sq => {
+        sq.classList.remove('hint-from', 'hint-to');
+    });
 }
 
 // ========== Rendu de l'échiquier ==========
@@ -316,6 +406,8 @@ function findKingSquare(color) {
 // ========== Interaction ==========
 
 function onSquareClick(squareName) {
+    console.log('Click on', squareName, 'isMyTurn:', state.isMyTurn, 'connected:', state.connected);
+
     if (!state.isMyTurn) {
         showToast("En attente du coup adverse...", "error");
         return;
@@ -436,9 +528,9 @@ function updateGameStatus(status) {
         statusEl.textContent = 'Pat - Match nul';
         showEndScreen(status);
     } else if (status.is_check) {
-        statusEl.textContent = state.isMyTurn ? '⚠️ Échec ! Votre tour' : '⚠️ Échec ! Attente du plateau...';
+        statusEl.textContent = state.isMyTurn ? 'Échec ! Votre tour' : 'Échec ! Attente du plateau...';
     } else {
-        statusEl.textContent = state.isMyTurn ? '🎯 Votre tour - Jouez un coup' : '⏳ En attente du coup sur le plateau...';
+        statusEl.textContent = state.isMyTurn ? 'Votre tour' : 'Attente du coup sur le plateau...';
     }
 
     if (status.last_move) {
@@ -495,13 +587,13 @@ function showEndScreen(status) {
     const subtitle = document.getElementById('end-subtitle');
 
     if (status.result === 'white') {
-        title.textContent = '🎉 Victoire !';
-        subtitle.textContent = 'Vous avez battu le joueur physique';
+        title.textContent = 'Victoire !';
+        subtitle.textContent = 'Vous avez gagné la partie';
     } else if (status.result === 'black') {
-        title.textContent = '😔 Défaite';
+        title.textContent = 'Défaite';
         subtitle.textContent = 'Le joueur physique a gagné';
     } else {
-        title.textContent = '🤝 Match nul';
+        title.textContent = 'Match nul';
         subtitle.textContent = 'La partie est nulle';
     }
 

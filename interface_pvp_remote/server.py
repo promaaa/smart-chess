@@ -104,7 +104,7 @@ class PvPRemoteServer:
                 return_exceptions=True
             )
     
-    async def _handle_websocket(self, websocket, path):
+    async def _handle_websocket(self, websocket):
         """Gère une connexion WebSocket."""
         self.clients.add(websocket)
         client_addr = websocket.remote_address
