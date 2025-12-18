@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """
-Interactive chess engine (v14).
-
-Implements search with transposition tables, Zobrist hashing,
-opening book hooks, and simple endgame refinements.
-
-This module is intended for experimentation and evaluation.
+Module version 14
 """
 import chess
 import chess.polyglot
@@ -94,7 +89,7 @@ ZOBRIST_CASTLING = {
 }
 ZOBRIST_EP_FILE = [random.getrandbits(64) for _ in range(8)]
 
-#----------------------------------------------------ParamÃ¨tres--------------------------------------------------------------
+#----------------------------------------------------Paramètres--------------------------------------------------------------
 
 TIME_LIMIT = 5.0
 MAX_PLIES = 9
@@ -170,7 +165,7 @@ def score_move(board: chess.Board, move: chess.Move):
             return 100000 + (victim_val*10 - mover_val)
     return 0
 
-#----------------------------------------PÃ©nalitÃ©s rÃ©pÃ©tition--------------------------------------------------------------
+#----------------------------------------Pénalités répétition--------------------------------------------------------------
 
 def repetition_penalty(board: chess.Board) -> int:
     if len(position_history) < 6:
@@ -208,7 +203,7 @@ def endgame_refinement(board: chess.Board, base_score: int) -> int:
             else:
                 score -= 30 * center
 
-    # Pions avancÃ©s / passÃ©s
+    # Pions avancés / passés
     for color in [chess.WHITE, chess.BLACK]:
         pawns = board.pieces(chess.PAWN, color)
         for sq in pawns:
@@ -272,14 +267,14 @@ def order_moves(board, moves, tt_move=None, killer_moves=None):
     return [m for s, m in scored_moves]
 
 #--------------------------------------------------Evaluation position--------------------------------------------------------------
-#   1) matÃ©riel + tableaux PST
-#   2) contrÃ´le du centre
-#   3) structure de pions (isolÃ©s, doublÃ©s, passÃ©s)
-#   4) dÃ©veloppement (ouverture)
-#   5) activitÃ© des tours
-#   6) sÃ©curitÃ© du roi
-#   7) mobilitÃ©
-#   8) pÃ©nalitÃ©s diverses
+#   1) matériel + tableaux PST
+#   2) contrôle du centre
+#   3) structure de pions (isolés, doublés, passés)
+#   4) développement (ouverture)
+#   5) activité des tours
+#   6) sÃ©curité du roi
+#   7) mobilité
+#   8) pénalités diverses
 #   9) fin de partie (refinement)
 
 def evaluate(board: chess.Board) -> int:
@@ -305,14 +300,13 @@ def evaluate(board: chess.Board) -> int:
                       bp, bn, bb, br, bq, bk,
                       stm_white, halfmove_clock)
 
-    # Tu peux garder ici ta logique de nulle par rÃ©pÃ©tition
     if board.is_repetition(3) or board.can_claim_draw():
         return 0
 
     return score
 
-#--------------------------------------------------Eviter rÃ©pÃ©tition--------------------------------------------------------------
-# PÃ©nalise les positions qui stagnent (6 derniÃ¨res positions identiques)
+#--------------------------------------------------Eviter répétition--------------------------------------------------------------
+# Pénalise les positions qui stagnent (6 derniÃ¨res positions identiques)
 
 def stagnation_penalty(history: list[chess.Board]) -> int:
     if len(history) < 6:
@@ -322,8 +316,8 @@ def stagnation_penalty(history: list[chess.Board]) -> int:
         return -80
     return 0
 
-#--------------------------------------------------nombre de cases que les piÃ¨ces peuvent contrÃ´ler--------------------------------------------------------------
-# Plus une piÃ¨ce a de mobilitÃ©, plus elle est active
+#--------------------------------------------------nombre de cases que les pièces peuvent contrôler--------------------------------------------------------------
+# Plus une pièce a de mobilité, plus elle est active
 
 def piece_mobility(board: chess.Board, color: chess.Color) -> int:
     mobility = 0
@@ -332,8 +326,8 @@ def piece_mobility(board: chess.Board, color: chess.Color) -> int:
             mobility += len(board.attacks(sq))
     return mobility
 
-#--------------------------------------------------Evaluation sÃ©curitÃ© du roi (dÃ©fense)--------------------------------------------------------------
-# (utilisÃ©e Ã©ventuellement ailleurs, mais pas dans evaluate)
+#--------------------------------------------------Evaluation sécurité du roi (défense)--------------------------------------------------------------
+# (utilisee eventuellement ailleurs, mais pas dans evaluate)
 
 def king_safety_score(board: chess.Board, color: chess.Color) -> int:
     king_sq = board.king(color)
@@ -365,14 +359,13 @@ def king_safety_score(board: chess.Board, color: chess.Color) -> int:
     elif color == chess.BLACK and rank == 7 and file in [6, 2]:
         score += 40
 
-    # Roi attaquÃ© directement
+    # Roi attaqué directement
     if board.is_attacked_by(not color, king_sq):
         score -= 40
 
     return score
 
-#-----------------------------------------------Pions passÃ©s (fonction optionnelle)--------------------------------------------------------------
-# Pas utilisÃ©e directement dans evaluate, mais conservÃ©e si tu veux tâ€™en servir ailleurs
+#-----------------------------------------------Pions passés-------------------------------------------------------------
 
 def passed_pawn_score(board: chess.Board, color: chess.Color) -> int:
     score = 0
@@ -434,7 +427,7 @@ def find_mate_in_one_or_two(board: chess.Board):
 
     return None
 
-#--------------------------------------------------NÃ©gamax--------------------------------------------------------------
+#--------------------------------------------------Négamax--------------------------------------------------------------
 
 def negamax(board, depth, alpha, beta, tt, start_time, time_limit,
             allow_null=True, killer_moves=None):
@@ -518,7 +511,7 @@ def negamax(board, depth, alpha, beta, tt, start_time, time_limit,
             first_move = False
 
         else:
-            # fenÃªtre Ã©troite
+            # fenètre étroite
             try:
                 score, _ = negamax(board, search_depth,
                                    -alpha - 1, -alpha, tt,
@@ -610,7 +603,7 @@ def find_best_move(board, max_plies=MAX_PLIES, time_limit=TIME_LIMIT, tt=None):
                 print(f"[opening] {opening_name} -> {chosen.uci()}", file=sys.stderr)
             return chosen, evaluate(board), 0
 
-    # --- DÃ©terminer la phase et adapter profondeur/temps ---
+    # --- Déterminer la phase et adapter profondeur/temps ---
     num_pieces = len(board.piece_map())
     if num_pieces > 24:
         phase = "opening"
@@ -639,7 +632,7 @@ def find_best_move(board, max_plies=MAX_PLIES, time_limit=TIME_LIMIT, tt=None):
         print(f"[INFO] Phase={phase} pieces={num_pieces} adaptive_max={adaptive_max} adaptive_time={adaptive_time:.2f}s",
               file=sys.stderr)
 
-    # VÃ©rification tactique mat en 1 ou 2 coups
+    # Vérification tactique mat en 1 ou 2 coups
     tactical_move = find_mate_in_one_or_two(board)
     if tactical_move:
         if DEBUG_PRINT:
@@ -657,7 +650,7 @@ def find_best_move(board, max_plies=MAX_PLIES, time_limit=TIME_LIMIT, tt=None):
                 print("[time] temps epuisÃ© avant profondeur", depth, file=sys.stderr)
             break
 
-        # --- DÃ©finition aspiration window ---
+        # --- Définition aspiration window ---
         if depth > 1:
             window = 50
             alpha = last_score - window
@@ -691,7 +684,7 @@ def find_best_move(board, max_plies=MAX_PLIES, time_limit=TIME_LIMIT, tt=None):
                 if DEBUG_PRINT:
                     print(f"[ID] depth={depth} move={move.uci()} score={val}", file=sys.stderr)
 
-            # Stop si valeur extrÃªme (mat trÃ¨s proche)
+            # Stop si valeur extrème (mat trÃ¨s proche)
             if abs(val) > 9000000:
                 break
 
@@ -756,7 +749,7 @@ def main():
     print(" ")
     if DEBUG_PRINT:
         print(" ")
-    print("DÃ©but de partie ! Vous jouez les Blancs.")
+    print("Début de partie ! Vous jouez les Blancs.")
     print("Entrez 'a' pour annuler votre dernier coup")
     print("       'f' pour interrompre la partie.")
     print("----- Bonne partie! -----")
@@ -767,7 +760,7 @@ def main():
 
         # Tour joueur
         if board.is_check():
-            print("âš ï¸ Votre roi est en Ã©chec !")
+            print("roi  en échec !")
 
         while True:
             try:
@@ -785,11 +778,11 @@ def main():
                         continue
                     elif len(board.move_stack) == 1:
                         board.pop()
-                        print("Dernier coup annulÃ© (seul votre coup).")
+                        print("Dernier coup annulé (seul votre coup).")
                         print_board(board)
                         continue
                     else:
-                        print("Aucun coup Ã  annuler.")
+                        print("Aucun coup à  annuler.")
                         continue
 
                 move = chess.Move.from_uci(user_move)
@@ -797,9 +790,9 @@ def main():
                     board.push(move)
                     break
                 else:
-                    print("Coup illÃ©gal, rÃ©essayez.")
+                    print("Coup illÃ©gal, réessayez.")
             except Exception:
-                print("Format invalide, rÃ©essayez (ex: e2e4).")
+                print("Format invalide, réessayez (ex: e2e4).")
 
         if user_move == "f":
             break
@@ -816,11 +809,11 @@ def main():
             board.push(move)
             print(f"Moteur joue : {move.uci()} (depth {depth}, score {score})")
         else:
-            print("âš ï¸ Aucun coup trouvÃ© par le moteur (position finale ou erreur).")
+            print("Aucun coup trouvé par le moteur (position finale ou erreur).")
 
         print_board(board)
 
-    print("\nPartie terminÃ©e :", board.result())
+    print("\nPartie terminée :", board.result())
 
 if __name__ == "__main__":
     main() 
