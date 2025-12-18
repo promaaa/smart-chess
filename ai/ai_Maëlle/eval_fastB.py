@@ -1,29 +1,23 @@
-"""
-Lightweight handcrafted evaluator used by interactive engines.
+# ------------------------ Tables PST -----------------------------------
 
-Provides piece-square tables (PST), simple material values,
-and a fast `eval_core(...)` function operating on bitboards.
-
-All scores are in centipawns; positive favors White.
-"""
-# ---------- Tables PST ----------
+# Piece-Square Tables : bonus/malus (en centipawns) selon la case (0..63)
+# Plus la valeur est grande, plus la case est "bonne" pour la pièce (en général en milieu de partie).
 
 PAWN_PST = [
-     0,  5,  5,-10,-10,  5,  5,  0,
-    10, 10, 10, 10, 10, 10, 10, 10,
-     5,  5, 10, 25, 25, 10,  5,  5,
+     0,  5,  5,-10,-10,  5,  5,  0,  
+    10, 10, 10, 10, 10, 10, 10, 10,  
+     5,  5, 10, 25, 25, 10,  5,  5,  
      0,  0,  0, 20, 20,  0,  0,  0,
-     5, -5,-10,  0,  0,-10, -5,  5,
+     5, -5,-10,  0,  0,-10, -5,  5, 
      5, 10, 10,-20,-20, 10, 10,  5,
      0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0
 ]
 
 KNIGHT_PST = [
-    -50,-40,-30,-30,-30,-30,-40,-50,
+    -50,-40,-30,-30,-30,-30,-40,-50, 
     -40,-20,  0,  5,  5,  0,-20,-40,
-    -30,  5, 10, 15, 15, 10,  5,-30,
-    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,  
     -30,  5, 15, 20, 20, 15,  5,-30,
     -30,  0, 10, 15, 15, 10,  0,-30,
     -40,-20,  0,  0,  0,  0,-20,-40,
@@ -31,9 +25,9 @@ KNIGHT_PST = [
 ]
 
 BISHOP_PST = [
-    -20,-10,-10,-10,-10,-10,-10,-20,
+    -20,-10,-10,-10,-10,-10,-10,-20,  
     -10,  5,  0,  0,  0,  0,  5,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,  
     -10,  0, 10, 10, 10, 10,  0,-10,
     -10, 10,  5, 10, 10,  5, 10,-10,
     -10,  0,  0, 10, 10,  0,  0,-10,
@@ -42,18 +36,18 @@ BISHOP_PST = [
 ]
 
 ROOK_PST = [
-     0,  0,  0,  5,  5,  0,  0,  0,
+     0,  0,  0,  5,  5,  0,  0,  0,  
     -5,  0,  0,  0,  0,  0,  0, -5,
     -5,  0,  0,  0,  0,  0,  0, -5,
     -5,  0,  0,  0,  0,  0,  0, -5,
     -5,  0,  0,  0,  0,  0,  0, -5,
     -5,  0,  0,  0,  0,  0,  0, -5,
-     5, 10, 10, 10, 10, 10, 10,  5,
+     5, 10, 10, 10, 10, 10, 10,  5,  
      0,  0,  0,  0,  0,  0,  0,  0
 ]
 
 QUEEN_PST = [
-    -20,-10,-10, -5, -5,-10,-10,-20,
+    -20,-10,-10, -5, -5,-10,-10,-20,  
     -10,  0,  0,  0,  0,  0,  0,-10,
     -10,  0,  5,  5,  5,  5,  0,-10,
      -5,  0,  5,  5,  5,  5,  0, -5,
@@ -64,7 +58,7 @@ QUEEN_PST = [
 ]
 
 KING_MID = [
-    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,  
     -30,-40,-40,-50,-50,-40,-40,-30,
     -30,-30,-30,-40,-40,-30,-30,-30,
     -30,-30,-30,-30,-30,-30,-30,-30,
@@ -85,6 +79,7 @@ KING_END = [
     -50,-30,-30,-30,-30,-30,-30,-50
 ]
 
+# Masques de colonnes (files) : FILE_MASKS[f] contient les 8 cases de la colonne f sous forme de bitboard
 FILE_MASKS = [0] * 8
 for f in range(8):
     m = 0
@@ -94,9 +89,10 @@ for f in range(8):
 
 
 def _popcount(bb):
+    """Compte le nombre de bits à 1 (nombre de pièces) dans un bitboard."""
     c = 0
     while bb:
-        bb &= bb - 1
+        bb &= bb - 1  # enlève le bit de poids faible (LSB) à 1
         c += 1
     return c
 
@@ -104,13 +100,12 @@ def _popcount(bb):
 def eval_core(wp, wn, wb, wr, wq, wk,
               bp, bn, bb, br, bq, bk,
               stm_white, halfmove_clock):
-    """Core evaluation on bitboards.
-
-    Parameters are 64-bit bitboards for each piece set, the side to move
-    (`stm_white` as bool/int), and the halfmove clock. Returns an integer
-    centipawn score (positive for White).
+    """
+    Évalue la position : matériel + bonus de placement (PST) + quelques heuristiques (pions, tours, finale),
+    et renvoie un score positif si c'est bon pour le camp au trait.
     """
 
+    # Valeurs matérielles de base (centipawns)
     PAWN  = 100
     KNIGHT = 325
     BISHOP = 335
@@ -118,7 +113,9 @@ def eval_core(wp, wn, wb, wr, wq, wk,
     QUEEN = 900
     KING  = 20000
 
-    # ---------- Phase ----------
+    # ---------------------------------- Phase ----------------------------------
+    # On calcule une "phase" (0..1024) pour mixer milieu de partie / finale.
+    # Ici on approxime à partir du matériel restant (sans compter les rois).
     material_sum = 0
     material_sum += _popcount(wp | bp) * PAWN
     material_sum += _popcount(wn | bn) * KNIGHT
@@ -126,26 +123,28 @@ def eval_core(wp, wn, wb, wr, wq, wk,
     material_sum += _popcount(wr | br) * ROOK
     material_sum += _popcount(wq | bq) * QUEEN
 
-    phase = material_sum * 1024 // 5200
+    phase = material_sum * 1024 // 5200  # normalisation empirique
     if phase > 1024:
         phase = 1024
     inv_phase = 1024 - phase
-    endgame = phase < 300
+    endgame = phase < 300  # seuil "finale" (heuristique)
 
-    score = 0
+    score = 0  # score du point de vue des Blancs (avant inversion stm)
 
-    # ---------- Matériel + PST Blancs ----------
-    # Pions
+    # --------------------------------- Matériel + PST Blancs -------------------------------
+    # On parcourt chaque pièce via extraction du LSB et on ajoute : valeur matérielle + PST.
+
+    # Pions blancs
     bb_tmp = wp
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
-        sq = lsb.bit_length() - 1
-        mid = PAWN_PST[sq]
-        pst = (mid * phase + mid * inv_phase) >> 10
+        sq = lsb.bit_length() - 1           # index 0..63
+        mid = PAWN_PST[sq]                  # bonus de case
+        pst = (mid * phase + mid * inv_phase) >> 10  # ici = mid (car même table)
         score += PAWN + pst
         bb_tmp ^= lsb
 
-    # Cavaliers
+    # Cavaliers blancs
     bb_tmp = wn
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
@@ -155,7 +154,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         score += KNIGHT + pst
         bb_tmp ^= lsb
 
-    # Fous
+    # Fous blancs
     bb_tmp = wb
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
@@ -165,7 +164,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         score += BISHOP + pst
         bb_tmp ^= lsb
 
-    # Tours
+    # Tours blanches
     bb_tmp = wr
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
@@ -175,7 +174,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         score += ROOK + pst
         bb_tmp ^= lsb
 
-    # Dames
+    # Dames blanches
     bb_tmp = wq
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
@@ -185,7 +184,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         score += QUEEN + pst
         bb_tmp ^= lsb
 
-    # Roi blanc
+    # Roi blanc : mix milieu de partie / finale (tables différentes)
     if wk:
         lsb = wk & -wk
         sq = lsb.bit_length() - 1
@@ -194,14 +193,13 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         pst = (mid * phase + end * inv_phase) >> 10
         score += KING + pst
 
-    # ---------- Matériel + PST Noirs ----------
-    # on miroir les cases (flip vertical) : sq ^ 56
+    # ----------------------------- Matériel + PST Noirs -----------------------------
     # Pions noirs
     bb_tmp = bp
     while bb_tmp:
         lsb = bb_tmp & -bb_tmp
         sq = lsb.bit_length() - 1
-        msq = sq ^ 56
+        msq = sq ^ 56                     
         mid = PAWN_PST[msq]
         pst = (mid * phase + mid * inv_phase) >> 10
         score -= PAWN + pst
@@ -251,7 +249,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         score -= QUEEN + pst
         bb_tmp ^= lsb
 
-    # Roi noir
+    # Roi noir (avec mix mid/end via msq)
     if bk:
         lsb = bk & -bk
         sq = lsb.bit_length() - 1
@@ -261,14 +259,12 @@ def eval_core(wp, wn, wb, wr, wq, wk,
         pst = (mid * phase + end * inv_phase) >> 10
         score -= KING + pst
 
-    # ---------- Pions doublés + colonnes ouvertes pour les tours ----------
-    # (simple mais rentable en Elo)
-
-    # pions doublés / isolés & activité des tours
+    # -------------------------- Pions doublés + colonnes ouvertes pour les tours -----------------------
+    # Pénaliser les pions doublés et récompenser les tours sur colonnes ouvertes.
     for color in (1, 0):  # 1 = blanc, 0 = noir
         pawns = wp if color == 1 else bp
         rooks = wr if color == 1 else br
-        sign = 1 if color == 1 else -1
+        sign = 1 if color == 1 else -1      # + pour blanc, - pour noir
 
         for f in range(8):
             file_mask = FILE_MASKS[f]
@@ -276,21 +272,22 @@ def eval_core(wp, wn, wb, wr, wq, wk,
             n = _popcount(pawns_on_file)
 
             if n > 1:
-                # pions doublés
+                # Pions doublés = faiblesse structurelle (souvent)
                 score -= 15 * sign
 
-            # tours sur colonnes ouvertes / semi-ouvertes
+            # Tours sur colonnes ouvertes / semi-ouvertes
             rooks_on_file = rooks & file_mask
             if rooks_on_file:
                 own_pawns = pawns_on_file
                 opp_pawns = (bp if color == 1 else wp) & file_mask
 
                 if own_pawns == 0 and opp_pawns != 0:
-                    score += 40 * sign    # semi-ouverte
+                    score += 40 * sign    # semi-ouverte (pas de pion ami)
                 elif own_pawns == 0 and opp_pawns == 0:
-                    score += 60 * sign    # ouverte
+                    score += 60 * sign    # ouverte (aucun pion)
 
-    # ---------- Pions passés (simple mais efficace) ----------
+    # -------------------------------- Pions passés ----------------------------
+    # Un pion passé (aucun pion adverse devant sur sa colonne/colonnes adjacentes) est dangereux, surtout en finale.
     for color in (1, 0):
         pawns = wp if color == 1 else bp
         opp_pawns = bp if color == 1 else wp
@@ -303,12 +300,14 @@ def eval_core(wp, wn, wb, wr, wq, wk,
             file = sq & 7
             rank = sq >> 3
 
+            # Vérifie s'il existe un pion adverse "devant" sur file-1, file, file+1
             is_passed = True
             for df in (-1, 0, 1):
                 f2 = file + df
                 if f2 < 0 or f2 > 7:
                     continue
-                if color == 1:  # blanc
+
+                if color == 1:  # blanc : regarde vers les ranks croissants
                     r2 = rank + 1
                     while r2 < 8:
                         sq2 = (r2 << 3) + f2
@@ -316,7 +315,7 @@ def eval_core(wp, wn, wb, wr, wq, wk,
                             is_passed = False
                             break
                         r2 += 1
-                else:  # noir
+                else:  # noir : regarde vers les ranks décroissants
                     r2 = rank - 1
                     while r2 >= 0:
                         sq2 = (r2 << 3) + f2
@@ -324,19 +323,21 @@ def eval_core(wp, wn, wb, wr, wq, wk,
                             is_passed = False
                             break
                         r2 -= 1
+
                 if not is_passed:
                     break
 
             if is_passed:
+                # Bonus qui augmente avec l’avancement, et beaucoup plus en finale
                 advance = rank if color == 1 else (7 - rank)
                 base = 30 + advance * (25 if endgame else 12)
                 score += base * sign
 
             bb_tmp ^= lsb
 
-    # ---------- Roi central en finale ----------
+    # ------+------------------------- Roi central en finale ----------------------------
+    # En finale, on veut un roi actif au centre 
     if endgame:
-        # roi blanc
         if wk:
             lsb = wk & -wk
             sq = lsb.bit_length() - 1
@@ -347,7 +348,6 @@ def eval_core(wp, wn, wb, wr, wq, wk,
             center = (3 - abs(file - cf)) + (3 - abs(rank - cr))
             score += 10 * center
 
-        # roi noir
         if bk:
             lsb = bk & -bk
             sq = lsb.bit_length() - 1
@@ -358,9 +358,10 @@ def eval_core(wp, wn, wb, wr, wq, wk,
             center = (3 - abs(file - cf)) + (3 - abs(rank - cr))
             score -= 10 * center
 
-    # ---------- 50 coups ----------
+    # ---------------------------------- Règle des 50 coups --------------------------------
     if halfmove_clock > 50:
         score -= (halfmove_clock - 50) * 2
 
-    # Score du point de vue du camp au trait
+    # Score du point de vue du camp  
     return score if stm_white else -score
+
