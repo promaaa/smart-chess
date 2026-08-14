@@ -8,21 +8,6 @@
 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [Hardware Design](#hardware-design)
-- [Vision System](#vision-system)
-- [AI Engine](#ai-engine)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Documentation](#documentation)
-- [License](#license)
-
----
-
 ## Overview
 
 SmartChess is a complete smart chessboard solution combining custom hardware design with a powerful embedded chess AI. The system features:
@@ -39,6 +24,21 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 <br>
 <em>Left: Final wooden enclosure | Right: Board with chess pieces</em>
 </div>
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Hardware Design](#hardware-design)
+- [Vision System](#vision-system)
+- [AI Engine](#ai-engine)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Documentation](#documentation)
+- [License](#license)
 
 ---
 
