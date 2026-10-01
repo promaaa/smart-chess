@@ -15,7 +15,7 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 - **Real-time piece detection** via a 64-reed sensor matrix (one per square)
 - **Computer vision backup** using CNN detection and optical flow tracking for error verification
 - **Visual feedback** through a 64-LED matrix indicating valid moves, threats, and game state
-- **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (400-2400 ELO)
+- **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (target 400–2400 ELO)
 - **Custom PCB design** with KiCad schematics for the complete 8×8 board
 
 <div align="center">
@@ -36,8 +36,8 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
-- [Hardware Design](#hardware-design)
 - [Vision System](#vision-system)
+- [Hardware Design](#hardware-design)
 - [AI Engine](#ai-engine)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -59,7 +59,7 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 
 - **IA-Marc V2 Engine**: Optimized chess engine for embedded systems
 - **50K-200K nodes/second** on Raspberry Pi 5
-- **8 Difficulty Levels**: From beginner (400 ELO) to expert (2400 ELO)
+- **8 Difficulty Levels**: From beginner (target 400 ELO) to expert (target 2400 ELO)
 - **6 Personalities**: Aggressive, Defensive, Positional, Tactical, Materialist, Balanced
 - **Opening Book**: Polyglot format support for natural openings
 
@@ -72,7 +72,7 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 
 ### AI Engine Optimizations
 
-| Optimization | Speedup | ELO Gain |
+| Optimization | Speedup | Est. ELO gain |
 |-------------|---------|----------|
 | Transposition Table | 3-5× | +200 |
 | Null Move Pruning | 1.5-2× | +100 |
@@ -83,39 +83,6 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 
 ---
 
-
-## Hardware Design
-
-<div align="center">
-<img src="docs/img/modelisation3D.png" alt="3D Model" width="600"/>
-<br>
-<em>3D CAD model of the SmartChess board</em>
-</div>
-
-### Component List
-
-| Component | Quantity | Role |
-|-----------|----------|------|
-| Raspberry Pi 5 (8GB) | 1 | Main processor |
-| TCA9548A | 1 | I²C multiplexer hub |
-| MCP23017 | 4 | 16-pin I/O controllers for sensors |
-| Reed Sensors | 64 | Magnetic piece detection |
-| HT16K33 | 2 | LED matrix drivers |
-| LEDs | 72 (64+8) | Visual feedback |
-
-### I²C Bus Configuration
-
-| Channel | Component | Address | Function |
-|---------|-----------|---------|----------|
-| 0 | MCP23017 (CM0) | 0x20 | Rows 1-2 sensors |
-| 1 | MCP23017 (CM1) | 0x20 | Rows 3-4 sensors |
-| 2 | MCP23017 (CM2) | 0x20 | Rows 5-6 sensors |
-| 3 | MCP23017 (CM3) | 0x20 | Rows 7-8 sensors |
-| 4 | HT16K33 (LED_A) | 0x70 | 8×8 LED matrix |
-| 5 | HT16K33 (LED_B) | 0x71 | Extra 1×8 LED row |
-| 6 | Camera (USB/CSI) | - | Vision system input |
-
----
 
 ## Vision System
 
@@ -174,11 +141,46 @@ if not comparison.matches:
 
 ---
 
+## Hardware Design
+
+<div align="center">
+<img src="docs/img/modelisation3D.png" alt="3D Model" width="600"/>
+<br>
+<em>3D CAD model of the SmartChess board</em>
+</div>
+
+### Component List
+
+| Component | Quantity | Role |
+|-----------|----------|------|
+| Raspberry Pi 5 (8GB) | 1 | Main processor |
+| TCA9548A | 1 | I²C multiplexer hub |
+| MCP23017 | 4 | 16-pin I/O controllers for sensors |
+| Reed Sensors | 64 | Magnetic piece detection |
+| HT16K33 | 2 | LED matrix drivers |
+| LEDs | 72 (64+8) | Visual feedback |
+
+### I²C Bus Configuration
+
+| Channel | Component | Address | Function |
+|---------|-----------|---------|----------|
+| 0 | MCP23017 (CM0) | 0x20 | Rows 1-2 sensors |
+| 1 | MCP23017 (CM1) | 0x20 | Rows 3-4 sensors |
+| 2 | MCP23017 (CM2) | 0x20 | Rows 5-6 sensors |
+| 3 | MCP23017 (CM3) | 0x20 | Rows 7-8 sensors |
+| 4 | HT16K33 (LED_A) | 0x70 | 8×8 LED matrix |
+| 5 | HT16K33 (LED_B) | 0x71 | Extra 1×8 LED row |
+| 6 | Camera (USB/CSI) | - | Vision system input |
+
+---
+
 ## AI Engine
 
 ### Difficulty Levels
 
-| Level | ELO | Depth | Time | Error Rate | Description |
+ELO values are target strengths for each level, not measured ratings.
+
+| Level | Target ELO | Depth | Time | Error Rate | Description |
 |-------|-----|-------|------|------------|-------------|
 | Enfant | 400 | 1 | 0.3s | 40% | Simple moves, many mistakes |
 | Débutant | 600 | 2 | 0.5s | 30% | Plays superficially |
@@ -354,7 +356,7 @@ mkdir -p ai/ia_marc/book/
 
 ### Future Improvements
 
-- [ ] Camera-based piece recognition (computer vision)
+- [ ] Piece identity recognition (vision already tracks the board and cross-checks occupancy)
 - [ ] UCI protocol support for external GUI
 - [ ] Web interface for remote play
 - [ ] Neural network evaluation (planned)
