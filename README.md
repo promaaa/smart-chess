@@ -25,9 +25,7 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 <em>Left: Final wooden enclosure | Right: Board with chess pieces</em>
 </div>
 
-Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc engine and the web interfaces. Teammates @Gautier2Marsac, @maelleledevedec-cloud, @Mamm846 and @JiRaphL explored alternative engines and neural-network evaluation (`ai/NeuralNet`, `ai/ai_Maëlle`).
-
-▶ [Project retrospective (video, in French)](https://www.youtube.com/watch?v=5BC216xx9qs)
+▶ [Project retrospective (video)](https://www.youtube.com/watch?v=5BC216xx9qs)
 
 ---
 
