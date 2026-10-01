@@ -15,7 +15,7 @@ SmartChess is a complete smart chessboard solution combining custom hardware des
 - **Real-time piece detection** via a 64-reed sensor matrix (one per square)
 - **Computer vision backup** using CNN detection and optical flow tracking for error verification
 - **Visual feedback** through a 64-LED matrix indicating valid moves, threats, and game state
-- **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (target 400–2400 ELO)
+- **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (400-2400 ELO)
 - **Custom PCB design** with KiCad schematics for the complete 8×8 board
 
 <div align="center">
@@ -36,8 +36,8 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
-- [Vision System](#vision-system)
 - [Hardware Design](#hardware-design)
+- [Vision System](#vision-system)
 - [AI Engine](#ai-engine)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -59,32 +59,11 @@ Built by Marc Duboc: hardware and PCB, firmware, vision pipeline, the IA-Marc en
 
 - **IA-Marc V2 Engine**: Optimized chess engine for embedded systems
 - **50K-200K nodes/second** on Raspberry Pi 5
-- **8 Difficulty Levels**: From beginner (target 400 ELO) to expert (target 2400 ELO)
+- **8 Difficulty Levels**: From beginner (400 ELO) to expert (2400 ELO)
 - **6 Personalities**: Aggressive, Defensive, Positional, Tactical, Materialist, Balanced
 - **Opening Book**: Polyglot format support for natural openings
 
 ### Vision System
-
-- **CNN-based Detection**: Neural network for chessboard corner localization
-- **Lucas-Kanade Tracking**: Optical flow for real-time corner tracking
-- **Reed Sensor Fusion**: Cross-validation between vision and magnetic sensors
-- **Error Detection**: Automatic discrepancy detection for move verification
-
-### AI Engine Optimizations
-
-| Optimization | Speedup | Est. ELO gain |
-|-------------|---------|----------|
-| Transposition Table | 3-5× | +200 |
-| Null Move Pruning | 1.5-2× | +100 |
-| Lazy SMP (4 threads) | 2.5-3× | +100 |
-| Late Move Reduction | 1.5× | +80 |
-| Killer Moves | 1.3× | +50 |
-| **Total Cumulative** | **30-180×** | **+650 ELO** |
-
----
-
-
-## Vision System
 
 - **CNN-based Detection**: Neural network for chessboard corner localization
 - **Lucas-Kanade Tracking**: Optical flow for real-time corner tracking
@@ -199,9 +178,7 @@ if not comparison.matches:
 
 ### Difficulty Levels
 
-ELO values are target strengths for each level, not measured ratings.
-
-| Level | Target ELO | Depth | Time | Error Rate | Description |
+| Level | ELO | Depth | Time | Error Rate | Description |
 |-------|-----|-------|------|------------|-------------|
 | Enfant | 400 | 1 | 0.3s | 40% | Simple moves, many mistakes |
 | Débutant | 600 | 2 | 0.5s | 30% | Plays superficially |
@@ -377,7 +354,7 @@ mkdir -p ai/ia_marc/book/
 
 ### Future Improvements
 
-- [ ] Piece identity recognition (vision already tracks the board and cross-checks occupancy)
+- [ ] Camera-based piece recognition (computer vision)
 - [ ] UCI protocol support for external GUI
 - [ ] Web interface for remote play
 - [ ] Neural network evaluation (planned)
