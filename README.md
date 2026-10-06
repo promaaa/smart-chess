@@ -35,9 +35,9 @@
 
 ## Build
 
-| <img src="docs/img/gantry_cad.webp" alt="CAD model with the XY gantry inside the case" width="290"/> | <img src="docs/img/led_test_wiring.gif" alt="Reed switch and LED wiring under the top plate during an LED test" width="290"/> | <img src="docs/img/board_leds.webp" alt="Finished board with the LEDs on" width="290"/> |
+| <img src="docs/img/gantry_cad.webp" alt="CAD model with the XY gantry inside the case" width="290"/> | <img src="docs/img/led_test_wiring.gif" alt="Reed switch and LED wiring under the top plate during an LED test" width="290"/> | <img src="docs/img/piece_detection.gif" alt="A piece is moved across the board and the corner LEDs of each square light up" width="290"/> |
 |:---:|:---:|:---:|
-| XY gantry and electromagnet (CAD) | Wiring under the top plate, LED test | Finished board, LEDs on |
+| XY gantry and electromagnet (CAD) | Wiring under the top plate, LED test | Real-time detection: piece placement triggers reed sensors and illuminates corner LEDs. |
 
 ## Hardware
 
