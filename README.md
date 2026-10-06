@@ -38,7 +38,7 @@
 <table>
   <tr>
     <td colspan="2" align="center">
-      <img src="docs/img/board_side.webp" alt="The finished SmartChess board on a desk, with the black base that holds the power supply and controllers" width="100%"/>
+      <img src="docs/img/board_side.webp" alt="The finished SmartChess board on a desk, with the black base that holds the power supply and controllers" width="60%"/>
       <br/><sub>Side view: power supply and controllers in the base</sub>
     </td>
   </tr>
