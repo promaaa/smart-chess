@@ -1,396 +1,121 @@
-# SmartChess: Intelligent Electronic Chessboard
-
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Project Status](https://img.shields.io/badge/Status-In%20Development-yellow.svg)]()
-[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-c51a4a.svg)]()
-
-**An intelligent electronic chessboard that automatically detects piece positions using reed sensors and lets you play against a powerful embedded AI engine.**
-
----
-
-## Overview
-
-SmartChess is a complete smart chessboard solution combining custom hardware design with a powerful embedded chess AI. The system features:
-
-- **Real-time piece detection** via a 64-reed sensor matrix (one per square)
-- **Computer vision backup** using CNN detection and optical flow tracking for error verification
-- **Visual feedback** through a 64-LED matrix indicating valid moves, threats, and game state
-- **Embedded AI** optimized for Raspberry Pi 5, supporting 8 difficulty levels (target 400–2400 ELO)
-- **Custom PCB design** with KiCad schematics for the complete 8×8 board
-
 <div align="center">
-<img src="docs/img/rendu_final_coffrage1.jpg" alt="SmartChess Final Assembly" width="350"/>
-<img src="docs/img/rendu_final_pieces.jpg" alt="SmartChess with Pieces" width="350"/>
-<br>
-<em>Left: Final wooden enclosure | Right: Board with chess pieces</em>
+
+# SmartChess
+
+**Play chess alone against an AI with an adaptive level, on a real wooden board.<br/>It feels every piece, lights every move and moves the AI's pieces by itself.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Raspberry Pi 5](https://img.shields.io/badge/Raspberry%20Pi%205-c51a4a?style=flat-square&logo=raspberrypi&logoColor=white)](#hardware)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?style=flat-square&logo=python&logoColor=white)](#quick-start)
+[![KiCad](https://img.shields.io/badge/KiCad-schematic-314cb0?style=flat-square&logo=kicad&logoColor=white)](prototypes/echiquier_8x8/hardware/8x8.pdf)
+
+<a href="https://www.youtube.com/watch?v=5BC216xx9qs"><img src="docs/img/smartchess_teaser.gif" alt="SmartChess: all 81 LEDs light up, then each piece that lands lights the four corners of its square" width="100%"/></a>
+
+<sub>Click on the gif to watch the project video retrospective</sub>
+
 </div>
 
-▶ [Project retrospective (video)](https://www.youtube.com/watch?v=5BC216xx9qs)
+## Highlights
 
----
+- **Tracks and lights every move.** A reed switch under each of the 64 squares senses the magnet in the piece base. 81 LEDs at the square corners then light the start and arrival squares.
+- **Checks with a camera.** A CNN finds the board corners (96 % accuracy, about 30 ms per image) and Lucas–Kanade optical flow tracks them. The result is compared with the reed sensors.
+- **Plays back.** Our own chess AI runs on the Raspberry Pi 5, with 8 levels (target 400–2400 ELO) and 6 playing styles.
+- **Moves its own pieces.** The Raspberry Pi drives an XY gantry under the board. An electromagnet holds the piece from below and slides it to its square.
 
-## Table of Contents
+## How it works
 
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [Vision System](#vision-system)
-- [Hardware Design](#hardware-design)
-- [AI Engine](#ai-engine)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Documentation](#documentation)
-- [License](#license)
+1. You move a piece. The reed switches see it leave one square and land on another.
+2. The Raspberry Pi checks the move with `python-chess` and lights the corners of both squares.
+3. IA-Marc V2 chooses a reply.
+4. The Raspberry Pi drives the gantry, which slides the AI's piece, and the LEDs show the move.
 
----
+## System schematic
 
-## Key Features
+<a href="prototypes/echiquier_8x8/hardware/8x8.svg"><img src="prototypes/echiquier_8x8/hardware/8x8.svg" alt="KiCad schematic of the 8x8 board: Raspberry Pi 5, TCA9548A multiplexer, MCP23017 expanders with reed switches, LED matrix driver" width="100%"/></a>
 
-### Hardware
+## Build
 
-- **64 Reed Sensors**: Magnetic detection using 4× MCP23017 I/O expanders
-- **64+8 LED Matrix**: Visual feedback via 2× HT16K33 LED drivers
-- **TCA9548A Multiplexer**: Centralized I²C bus management
-- **Custom PCB**: Complete KiCad schematic for the 8×8 design
+| <img src="docs/img/gantry_cad.webp" alt="CAD model with the XY gantry inside the case" width="290"/> | <img src="docs/img/reed_sensors.webp" alt="Reed switches wired under the top plate" width="290"/> | <img src="docs/img/board_leds.webp" alt="Finished board with the LEDs on" width="290"/> |
+|:---:|:---:|:---:|
+| XY gantry and electromagnet (CAD) | Reed switches under the top plate | Finished board, LEDs on |
 
-### Software
+## Hardware
 
-- **IA-Marc V2 Engine**: Optimized chess engine for embedded systems
-- **50K-200K nodes/second** on Raspberry Pi 5
-- **8 Difficulty Levels**: From beginner (target 400 ELO) to expert (target 2400 ELO)
-- **6 Personalities**: Aggressive, Defensive, Positional, Tactical, Materialist, Balanced
-- **Opening Book**: Polyglot format support for natural openings
+| Part | Qty | Role |
+|---|:-:|---|
+| Raspberry Pi 5 | 1 | Game loop, engine, vision, gantry control |
+| TCA9548A | 1 | I²C multiplexer (`0x72`) |
+| MCP23017 | 4 | 16 reed switches each (`0x20`, channels 0–3) |
+| Reed switch + magnet | 64 | One per square, magnet in each piece base |
+| HT16K33 | 2 | LED drivers (`0x70`, `0x71`, channels 4–5) |
+| LED | 81 | 9 × 9 grid at the square corners |
+| ILI9341 TFT, 320 × 240 | 1 | Game screen (SPI) |
+| USB camera | 1 | Vision check |
+| A4988 / DRV8825 + NEMA 17 | 2 | XY gantry: MGN12 rails, GT2 belts, 1/16 step |
+| 12 V electromagnet + IRLZ44N | 1 | Holds the piece from below |
+| 12 V 4 A supply + 12 → 5 V buck | 1 | Power |
 
-### Vision System
+## Our own chess AI
 
-- **CNN-based Detection**: Neural network for chessboard corner localization
-- **Lucas-Kanade Tracking**: Optical flow for real-time corner tracking
-- **Reed Sensor Fusion**: Cross-validation between vision and magnetic sensors
-- **Error Detection**: Automatic discrepancy detection for move verification
+IA-Marc V2 uses NegaMax with alpha-beta pruning, iterative deepening with aspiration windows, quiescence search, null-move pruning, late move reductions, a transposition table, killer and history heuristics, Lazy SMP on 4 threads and PeSTO evaluation. It reads Polyglot opening books and runs 2–3× faster under PyPy.
 
-### AI Engine Optimizations
+<details>
+<summary><b>Difficulty levels</b> (ELO values are targets, not measured ratings)</summary>
 
-| Optimization | Speedup | Est. ELO gain |
-|-------------|---------|----------|
-| Transposition Table | 3-5× | +200 |
-| Null Move Pruning | 1.5-2× | +100 |
-| Lazy SMP (4 threads) | 2.5-3× | +100 |
-| Late Move Reduction | 1.5× | +80 |
-| Killer Moves | 1.3× | +50 |
-| **Total Cumulative** | **30-180×** | **+650 ELO** |
+| Level | Target ELO | Depth | Time | Error rate |
+|---|:-:|:-:|:-:|:-:|
+| Enfant | 400 | 1 | 0.3 s | 40 % |
+| Débutant | 600 | 2 | 0.5 s | 30 % |
+| Amateur | 1000 | 3 | 1 s | 20 % |
+| Club | 1400 | 4 | 2 s | 10 % |
+| Compétition | 1800 | 6 | 4 s | 5 % |
+| Expert | 2000 | 8 | 8 s | 2 % |
+| Maître | 2200 | 10 | 15 s | 0 % |
+| Maximum | 2400 | 20 | 30 s | 0 % |
 
----
+Playing styles: aggressive, defensive, positional, tactical, materialist, balanced.
 
+</details>
 
-## Vision System
+## Quick start
 
-The vision subsystem provides a secondary detection layer to complement reed sensors, enabling piece tracking, move verification, and error detection.
-
-### Detection Pipeline
-
-| Stage | Method | Purpose |
-|-------|--------|----------|
-| **Initial Detection** | CNN (PyTorch) | Locate 4 chessboard corners with high accuracy |
-| **Real-time Tracking** | Lucas-Kanade Optical Flow | Track corners at 30+ FPS with minimal latency |
-| **State Management** | Finite State Machine | Switch between detection/tracking based on confidence |
-| **Sensor Fusion** | VisionReedBridge | Compare vision output with reed sensor readings |
-
-### Key Features
-
-**CNN Corner Detection:**
-- Lightweight neural network optimized for Raspberry Pi
-- Detects 4 board corners regardless of perspective
-- Automatic re-detection when tracking confidence drops
-
-**Lucas-Kanade Tracking:**
-- 30+ FPS real-time corner tracking
-- Pyramidal implementation for robustness
-- Sub-pixel accuracy for precise square mapping
-
-**Vision-Reed Fusion:**
-- Cross-validates piece positions between sensors
-- Detects sensor malfunctions or cheating attempts
-- Provides confidence scores for each detected state
-
-### Usage
-
-```python
-from vision.chessboard_detector import ChessboardDetector, create_detector
-from vision.integration import VisionReedBridge
-
-# Create detector with Raspberry Pi preset
-detector = create_detector("raspberry_pi")
-detector.load_model("models/corner_detector.pt")
-
-# Process camera frame
-result = detector.process_frame(frame)
-if result.detected:
-    corners = result.corners  # 4 corner positions
-
-# Compare with reed sensors
-bridge = VisionReedBridge(corners)
-bridge.update_reed_state(reed_matrix, timestamp)
-bridge.update_vision_state(vision_squares, timestamp, result.confidence)
-
-comparison = bridge.compare_states()
-if not comparison.matches:
-    print(f"Discrepancies detected: {comparison.discrepancies}")
-```
-
----
-
-## Hardware Design
-
-<div align="center">
-<img src="docs/img/modelisation3D.png" alt="3D Model" width="600"/>
-<br>
-<em>3D CAD model of the SmartChess board</em>
-</div>
-
-### Component List
-
-| Component | Quantity | Role |
-|-----------|----------|------|
-| Raspberry Pi 5 (8GB) | 1 | Main processor |
-| TCA9548A | 1 | I²C multiplexer hub |
-| MCP23017 | 4 | 16-pin I/O controllers for sensors |
-| Reed Sensors | 64 | Magnetic piece detection |
-| HT16K33 | 2 | LED matrix drivers |
-| LEDs | 72 (64+8) | Visual feedback |
-
-### I²C Bus Configuration
-
-| Channel | Component | Address | Function |
-|---------|-----------|---------|----------|
-| 0 | MCP23017 (CM0) | 0x20 | Rows 1-2 sensors |
-| 1 | MCP23017 (CM1) | 0x20 | Rows 3-4 sensors |
-| 2 | MCP23017 (CM2) | 0x20 | Rows 5-6 sensors |
-| 3 | MCP23017 (CM3) | 0x20 | Rows 7-8 sensors |
-| 4 | HT16K33 (LED_A) | 0x70 | 8×8 LED matrix |
-| 5 | HT16K33 (LED_B) | 0x71 | Extra 1×8 LED row |
-| 6 | Camera (USB/CSI) | - | Vision system input |
-
----
-
-## AI Engine
-
-### Difficulty Levels
-
-ELO values are target strengths for each level, not measured ratings.
-
-| Level | Target ELO | Depth | Time | Error Rate | Description |
-|-------|-----|-------|------|------------|-------------|
-| Enfant | 400 | 1 | 0.3s | 40% | Simple moves, many mistakes |
-| Débutant | 600 | 2 | 0.5s | 30% | Plays superficially |
-| Amateur | 1000 | 3 | 1.0s | 20% | Understands basics |
-| Club | 1400 | 4 | 2.0s | 10% | Good club player |
-| Compétition | 1800 | 6 | 4.0s | 5% | Regional competition level |
-| Expert | 2000 | 8 | 8.0s | 2% | Expert with minor flaws |
-| Maître | 2200 | 10 | 15s | 0% | FIDE master level |
-| Maximum | 2400 | 20 | 30s | 0% | Maximum RPi 5 power |
-
-### Engine Features
-
-**Search Algorithms:**
-- NegaMax with Alpha-Beta pruning
-- Iterative Deepening with Aspiration Windows
-- Quiescence Search for capture stability
-- Null Move Pruning for aggressive cutoffs
-- Late Move Reduction (LMR)
-
-**Evaluation:**
-- PeSTO evaluation tables
-- Mobility analysis
-- Pawn structure analysis
-- King safety evaluation
-- Piece coordination scoring
-
-**Performance:**
-- Transposition Table (256-512 MB)
-- Killer Moves heuristic
-- History Heuristic
-- Lazy SMP parallelization (4 threads)
-- PyPy compatible for 2-3× speedup
-
----
-
-## Project Structure
-
-```
-smart-chess/
-├── README.md                    # Project overview (this file)
-├── LICENSE                      # MIT License
-│
-├── docs/                        # Documentation and images
-│   └── img/                     # Project images
-│       ├── modelisation3D.png
-│       ├── rendu_final_coffrage1.jpg
-│       └── rendu_final_pieces.jpg
-│
-├── ai/                          # AI engines
-│   ├── NeuralNet/               # Neural network experiments
-│   ├── ai_Maëlle/               # Alternative AI implementation
-│   └── ia_marc/                 # Production AI engines
-│       ├── V1/                  # Version 1 (legacy)
-│       ├── V2/                  # Version 2 (current)
-│       │   ├── engine_main.py   # Main API
-│       │   ├── engine_brain.py  # PeSTO evaluation
-│       │   ├── engine_search.py # NegaMax search
-│       │   ├── engine_tt.py     # Transposition table
-│       │   ├── engine_ordering.py # Move ordering
-│       │   ├── engine_opening.py  # Opening book
-│       │   ├── engine_config.py # Configuration
-│       │   ├── requirements.txt # Dependencies
-│       │   └── tests/           # Test suite
-│       └── book/                # Opening books (Polyglot)
-│
-└── prototypes/                  # Hardware prototypes
-    ├── echiquier_8x8/           # Main 8×8 prototype
-    │   ├── firmware/            # Embedded code
-    │   │   ├── ia_embarquee/    # Game scripts
-    │   │   │   ├── chess_game_v1.py
-    │   │   │   └── chess_game_v2.py
-    │   │   ├── vision/          # Vision system
-    │   │   │   ├── chessboard_detector.py  # Main detector
-    │   │   │   ├── integration.py          # Reed sensor bridge
-    │   │   │   ├── detection/              # CNN model & preprocessing
-    │   │   │   └── tracking/               # LK tracker & state mgmt
-    │   │   └── requirements.txt
-    │   └── hardware/            # KiCad schematics
-    │       ├── 8x8.kicad_sch
-    │       └── 8x8.pdf
-    └── echiquier_2x2/           # Test prototype (2×2)
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Raspberry Pi 5 (8GB recommended) with Raspberry Pi OS 64-bit
-- Python 3.10+ or PyPy3 for maximum performance
-- Git
-
-### Installation
+**Without hardware**, play against the engine in your browser:
 
 ```bash
-# Clone the repository
-git clone https://github.com/promaaa/smart-chess.git
-cd smart-chess
-
-# Navigate to the AI engine directory
-cd ai/ia_marc/V2/
-
-# Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+git clone https://github.com/promaaa/smart-chess.git && cd smart-chess
+./interface_utilisateur/start.sh    # creates ./venv, then opens http://localhost:8080
 ```
 
-### Running the Game
+**On the board** (Raspberry Pi 5, Raspberry Pi OS 64-bit, Python 3.10+):
 
 ```bash
-# Navigate to the game scripts
-cd prototypes/echiquier_8x8/firmware/ia_embarquee/
-
-# Run the main game (V2 with menu)
-python3 chess_game_v2.py
+python3 -m venv venv && source venv/bin/activate
+pip install -r ai/ia_marc/V2/requirements.txt -r prototypes/echiquier_8x8/firmware/requirements.txt
+python3 prototypes/echiquier_8x8/firmware/ia_embarquee/chess_game_v2.py
 ```
 
-### Quick AI Test
+## Repository
 
-```python
-from ai.ia_marc.V2.engine_main import ChessEngine
-import chess
-
-# Create engine
-engine = ChessEngine()
-
-# Set difficulty
-engine.set_level("Club")  # or engine.set_elo(1400)
-
-# Get a move
-board = chess.Board()
-move = engine.get_move(board, time_limit=3.0)
-
-print(f"Best move: {move}")
+```
+ai/ia_marc/V2/                      IA-Marc V2 engine (current)
+ai/ai_Maëlle/ · ai/NeuralNet/       second engine · neural evaluation experiments
+prototypes/echiquier_8x8/firmware/  game loop, vision, hardware tests
+prototypes/echiquier_8x8/hardware/  KiCad schematic of the sensor and LED board
+prototypes/echiquier_2x2/           2 × 2 proof of concept
+interface_utilisateur/              browser simulator against the engine
+interface_pvp_remote/               online player against the physical board
+docs/                               images
 ```
 
-### Opening Book (Optional)
+## Roadmap
 
-For stronger openings, download a Polyglot opening book:
-
-```bash
-# Create book directory
-mkdir -p ai/ia_marc/book/
-
-# Download a book (example: Cerebellum Light)
-# Place the .bin file in ai/ia_marc/book/
-```
-
----
-
-## Documentation
-
-### Technical References
-
-| Document | Location | Description |
-|----------|----------|-------------|
-| Hardware Structure | `prototypes/echiquier_8x8/firmware/structure.md` | Full hardware documentation |
-| AI Engine README | `ai/ia_marc/V2/README.md` | Detailed engine documentation |
-| Hardware Schematic | `prototypes/echiquier_8x8/hardware/8x8.pdf` | KiCad schematic export |
-
-### Key APIs
-
-**ChessEngine (ai/ia_marc/V2/engine_main.py)**:
-- `get_move(board, time_limit)`: Get best move for position
-- `set_level(name)`: Set difficulty by name
-- `set_elo(elo)`: Set difficulty by ELO (400-2400)
-- `set_personality(name)`: Set playing style
-- `get_move_with_stats(board)`: Get move with search statistics
-
-### Future Improvements
-
+- [ ] YOLO-based board detection
 - [ ] Piece identity recognition (vision already tracks the board and cross-checks occupancy)
 - [ ] UCI protocol support for external GUI
 - [ ] Web interface for remote play
-- [ ] Neural network evaluation (planned)
+- [ ] Neural network evaluation
 - [ ] Endgame tablebases support
-
----
-
-## Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/improvement`)
-3. Commit your changes (`git commit -m 'Add new feature'`)
-4. Push to the branch (`git push origin feature/improvement`)
-5. Open a Pull Request
-
-### Areas for Contribution
-
-- Performance optimization of the search algorithm
-- Adding tactical test positions
-- Extending the opening book
-- Improving position evaluation heuristics
-- Hardware design improvements
-
----
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Acknowledgments
-
-- [python-chess](https://python-chess.readthedocs.io/) - Chess library for Python
-- [PeSTO](https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function) - Piece-Square tables
-- [Chess Programming Wiki](https://www.chessprogramming.org/) - Invaluable resource for chess programming techniques
-- Adafruit libraries for hardware interfacing (HT16K33, MCP23017, TCA9548A)
+MIT, see [LICENSE](LICENSE). Built with [python-chess](https://python-chess.readthedocs.io/), the [PeSTO](https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function) tables, the [Chess Programming Wiki](https://www.chessprogramming.org/) and Adafruit CircuitPython libraries.
